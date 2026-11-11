@@ -1,0 +1,6 @@
+# [4.1]: "A module cannot import itself".
+import Itself;   #!error: cannot import itself
+
+proc start()
+begin
+end;

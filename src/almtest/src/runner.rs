@@ -95,30 +95,16 @@ pub fn run(m: &Manifest, compiler: &Path) -> Report {
     }
 }
 
-/// Invoke the compiler on the test's modules.
+/// Invoke the compiler on the test's main module.
 ///
-/// Every module in the directory is named on the command line, because import
-/// resolution is Phase 2; once the module loader exists this passes the main module and
-/// lets the compiler find the rest through `--path`.
+/// Only the main module is named: [4.1] says the compiler is given the main module and
+/// finds the rest itself, through the `--path` that `compile_options` adds. So a
+/// multi-module test exercises the module loader, which is the point — passing every
+/// file would bypass exactly the thing under test.
 fn invoke(m: &Manifest, compiler: &Path) -> Result<(i32, String), String> {
-    let mut modules: Vec<std::path::PathBuf> = match std::fs::read_dir(&m.dir) {
-        Ok(entries) => entries
-            .filter_map(Result::ok)
-            .map(|e| e.path())
-            .filter(|p| p.extension().is_some_and(|x| x == "alm"))
-            .collect(),
-        Err(e) => return Err(format!("cannot read {}: {e}", m.dir.display())),
-    };
-    // The main module first, then the rest in a fixed order: the order modules are
-    // given decides the order diagnostics come out in, and that is compared.
-    modules.sort();
-    let main = m.main_path();
-    modules.retain(|p| *p != main);
-    modules.insert(0, main);
-
     let output = Command::new(compiler)
         .args(m.compile_options())
-        .args(&modules)
+        .arg(m.main_path())
         .output()
         .map_err(|e| format!("cannot run {}: {e}", compiler.display()))?;
     let status = output.status.code().unwrap_or(-1);

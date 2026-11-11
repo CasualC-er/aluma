@@ -1,0 +1,6 @@
+# [4.1]: `A` is the file `A.alm`, searched for in the `--path` directories.
+import Absent;   #!error: cannot find module `Absent`
+
+proc start()
+begin
+end;

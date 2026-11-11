@@ -2,7 +2,7 @@
 # source: documentation/guide.md:974
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
 mode = run
-main = 113MessagesAndReplies.alm
+main = MessagesAndReplies.alm
 exit = 0
 
 [stdout] ignore

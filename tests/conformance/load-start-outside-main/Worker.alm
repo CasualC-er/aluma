@@ -1,0 +1,7 @@
+proc go()
+begin
+end;
+
+proc start()   #!error: only the main module may declare `start`
+begin
+end;

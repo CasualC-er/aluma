@@ -107,6 +107,14 @@ def read_blocks(path: str) -> list[Block]:
     return out
 
 
+# The 52 reserved words [2]: a module may not be named one of these.
+ALUMA_KEYWORDS = set(
+    """also and array begin bool catch char const defer div do else elsif end enum
+    exception exit false fixed generic if import inbox int is mailbox mod new nil next
+    not of or private proc publisher raise record ref reply return rounded share task
+    then true try type var view void while""".split()
+)
+
 # "Module `IntList`:" — how all three documents introduce a module's source.
 DEFINES_MODULE = re.compile(r"^Module\s+`([A-Za-z][A-Za-z0-9]*)`")
 # `import A;`, `import A, B;`, `import X is G(...);` — the file needed is A, B, or G.
@@ -179,7 +187,13 @@ def module_name(block: Block) -> tuple[str, str]:
         m = MODULE_HINT.match(lines[0].strip())
         if m:
             return m.group(1), "\n".join(lines[1:]).lstrip("\n")
-    name = re.sub(r"[^A-Za-z0-9]", "", block.heading.title()) or "Example"
+    # A module name is `letter { letter | digit }` and not a keyword [4.1]. A heading
+    # like "4.3 Records" would otherwise give `43Records`, which cannot be a module —
+    # the compiler is right to reject it, so the name is made legal here.
+    name = re.sub(r"[^A-Za-z0-9]", "", block.heading.title())
+    name = re.sub(r"^[0-9]+", "", name) or "Example"
+    if name in ALUMA_KEYWORDS:
+        name = "Example" + name.title()
     return name[:24], block.body
 
 

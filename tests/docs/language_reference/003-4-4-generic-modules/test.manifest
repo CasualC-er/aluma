@@ -2,4 +2,4 @@
 # source: documentation/language_reference.md:186
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
 mode = compile-ok
-main = 44GenericModules.alm
+main = GenericModules.alm

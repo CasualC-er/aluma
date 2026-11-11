@@ -2,4 +2,4 @@
 # source: documentation/style_guide.md:194
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
 mode = compile-ok
-main = 11DecimalAndWholeNumbers.alm
+main = DecimalAndWholeNumbers.alm

@@ -10,16 +10,10 @@
 //! definition of them shared with the backend and the runtime: their values are part of
 //! a program's identity [8.4], so nothing here may invent or default them separately.
 //!
-//! What it does today: reads each module, lexes and parses it, and writes any
-//! diagnostics to standard error. Semantic analysis is Phase 2 and lowering is Phase 3,
-//! so a clean run means "this is syntactically a module", no more. It exists now
-//! because without it nothing in the conformance corpus is actually run — the manifests,
-//! the modes and the `#!error` annotations are all decoration until something invokes a
-//! compiler (ADR-013.4).
-//!
-//! Import resolution is also Phase 2, so for now every module to compile is named on
-//! the command line and `--path` is accepted but unused. When the module loader lands,
-//! the driver will take the main module and find the rest itself.
+//! What it does today: loads the main module and everything it imports [4.1], lexes
+//! and parses each, and writes any diagnostics to standard error. Name resolution and
+//! the type rules are the rest of Phase 2; lowering is Phase 3. So a clean run means
+//! "these are syntactically modules and their imports resolve", no more.
 //!
 //! ## Exit status
 //!
@@ -37,50 +31,44 @@ use std::process::ExitCode;
 
 use alm_core::diag::{Diagnostics, SourceMap};
 use alm_core::options::Options;
-use almc0::{lex::lex, parse::parse};
+use almc0::load::load;
 
 fn main() -> ExitCode {
     let argv: Vec<String> = std::env::args().skip(1).collect();
-    let (_options, files) = match Options::parse(&argv) {
+    let (options, files) = match Options::parse(&argv) {
         Ok(pair) => pair,
         Err(e) => {
             eprintln!("almc0: {e}");
             return ExitCode::from(2);
         }
     };
-    if files.is_empty() {
-        eprintln!("almc0: no source files given");
-        eprintln!("usage: almc0 [options] <module.alm> [more modules...]");
+    // [4.1]: "The compiler is given the main module", and finds the rest itself.
+    let [main] = files.as_slice() else {
+        if files.is_empty() {
+            eprintln!("almc0: no main module given");
+        } else {
+            eprintln!(
+                "almc0: give one main module, not {}; the compiler finds the modules it \
+                 imports itself [4.1]",
+                files.len()
+            );
+        }
+        eprintln!("usage: almc0 [options] <MainModule.alm>");
+        return ExitCode::from(2);
+    };
+    let main = std::path::Path::new(main);
+    if !main.is_file() {
+        eprintln!("almc0: cannot read the main module: it does not exist");
         return ExitCode::from(2);
     }
 
-    // Read every module first, so that a missing file is an invocation error rather
-    // than a diagnostic half way through a compilation.
     let mut sources = SourceMap::new();
-    let mut ids = Vec::new();
-    for path in &files {
-        let text = match std::fs::read_to_string(path) {
-            Ok(t) => t,
-            Err(e) => {
-                eprintln!("almc0: cannot read {path}: {e}");
-                return ExitCode::from(2);
-            }
-        };
-        // A module is its file name without the extension [4.1]. The directory is not
-        // part of the name, and never appears in a diagnostic (see `alm_core::diag`).
-        let module = std::path::Path::new(path)
-            .file_stem()
-            .map(|s| s.to_string_lossy().into_owned())
-            .unwrap_or_else(|| path.clone());
-        ids.push(sources.add(module, text));
-    }
-
     let mut diags = Diagnostics::new();
-    for id in ids {
-        let text = sources.text(id).to_owned();
-        let tokens = lex(id, &text, &mut diags);
-        let _program = parse(id, &tokens, &mut diags);
-    }
+    let program = load(main, &options.path, &mut sources, &mut diags);
+    // Nothing is done with the loaded program yet beyond having parsed it; the next
+    // step is name resolution over `program.modules`, which are already in the order
+    // [4.2] requires (imports before the module that imports them).
+    let _ = program;
 
     let rendered = diags.render(&sources);
     if !rendered.is_empty() {

@@ -70,8 +70,8 @@ is what makes "alongside" checkable.
 - [x] `almc0` driver: a binary taking source files and the [8.9] options, writing diagnostics to standard error; exit 0 clean, 1 rejected, 2 invoked wrongly
 - [x] Harness runner: invokes the driver for `compile-ok` and `compile-error` tests; 32 of the 61 tests now run for real, 29 wait on a backend
 
-- [ ] Module loader: file = module, `--path` order, implementation modules last, `Net` overridable [4.1]
-- [ ] Import graph: not transitive, no self-import, acyclic with the cycle named in the error
+- [x] Module loader: file = module, `--path` order, implementation modules last, `Net` overridable [4.1]
+- [x] Import graph: no self-import, acyclic with the cycle named in the error — *non-transitivity is a name-resolution rule and waits for it*
 - [ ] One flat namespace per module; imported module names occupy it [4.1]
 - [ ] `std` auto-import; shadowing by top-level, parameter and local declarations; the unhidable name list; `std::name` always reaches the library [4.1]
 - [ ] `private` on declarations and record fields; cross-module errors; private types usable in visible signatures [4.1]

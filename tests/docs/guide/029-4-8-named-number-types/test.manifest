@@ -2,7 +2,7 @@
 # source: documentation/guide.md:190
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
 mode = run
-main = 48NamedNumberTypes.alm
+main = NamedNumberTypes.alm
 exit = 0
 
 [stdout] ignore

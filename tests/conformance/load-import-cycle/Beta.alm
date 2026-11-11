@@ -1,0 +1,6 @@
+import Gamma;
+
+proc go()
+begin
+  Gamma::go();
+end;

@@ -2,7 +2,7 @@
 # source: documentation/style_guide.md:147
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
 mode = run
-main = 9Exceptions.alm
+main = Exceptions.alm
 exit = 0
 
 [stdout] ignore

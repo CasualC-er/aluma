@@ -1,0 +1,4 @@
+# name: a module cannot import itself
+# source: documentation/language_reference.md:4.1
+mode = compile-error
+main = Itself.alm

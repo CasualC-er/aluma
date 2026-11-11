@@ -1,0 +1,4 @@
+# name: only the main module may declare start
+# source: documentation/language_reference.md:4.1
+mode = compile-error
+main = Main.alm

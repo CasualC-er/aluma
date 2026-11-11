@@ -2,7 +2,7 @@
 # source: documentation/style_guide.md:285
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
 mode = run
-main = 14GroupsAndGenericModule.alm
+main = GroupsAndGenericModules.alm
 exit = 0
 
 [stdout] ignore

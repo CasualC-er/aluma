@@ -1,0 +1,4 @@
+# name: an import cycle is reported, naming the cycle
+# source: documentation/language_reference.md:4.1
+mode = compile-error
+main = Alpha.alm

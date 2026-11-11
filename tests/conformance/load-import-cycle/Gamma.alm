@@ -1,0 +1,7 @@
+# The import that closes the cycle. The notes on the other two modules are not
+# errors in their own right, so only this line is annotated.
+import Alpha;   #!error: form a cycle
+
+proc go()
+begin
+end;

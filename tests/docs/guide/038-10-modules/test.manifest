@@ -2,7 +2,7 @@
 # source: documentation/guide.md:632
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
 mode = run
-main = 10Modules.alm
+main = Modules.alm
 exit = 0
 
 [stdout] ignore

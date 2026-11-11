@@ -1,0 +1,8 @@
+# [4.1]: "The compiler is given the main module, which must declare `start`. No
+# other module may declare `start`."
+import Worker;
+
+proc start()
+begin
+  Worker::go();
+end;

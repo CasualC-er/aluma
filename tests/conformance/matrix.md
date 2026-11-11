@@ -81,7 +81,30 @@ enumerate those, and rows are added here as each is implemented.
 | `garg` is a type or an expression | `parse.rs::a_generic_argument_may_be_a_type_or_an_expression` | tested |
 | the whole grammar, over the documents' examples | `src/almc0/tests/parse_corpus.rs` | tested |
 
-## Semantics [4], [7] — Phase 2
+## Modules and visibility [4.1] — Phase 2
+
+| Rule | Test | Status |
+|---|---|---|
+| a module is its file name without the extension, an identifier that is not a keyword | `load.rs::what_may_be_a_module_name` | tested |
+| `A` is `A.alm`, searched on `--path`, first match wins | `load.rs::the_first_directory_on_the_path_wins` | tested |
+| `--path` defaults to the main module's directory [8.9] | `load.rs::the_path_defaults_to_the_main_modules_directory` | tested |
+| the implementation's modules are searched after the path | `load.rs::an_implementation_module_needs_no_file` | tested |
+| a program's own `Net.alm` takes the implementation's place | `load.rs::a_programs_own_net_takes_the_implementations_place` | tested |
+| the program is the main module and everything it imports, transitively | `load.rs::a_module_imports_come_before_it`, `load.rs::a_diamond_loads_the_shared_module_once` | tested |
+| an instance import loads the generic module [4.4] | `load.rs::an_instance_import_loads_the_generic_module` | tested |
+| a module cannot import itself | `load.rs::a_module_cannot_import_itself`, `tests/conformance/load-self-import` | tested |
+| the imports must not form a cycle, and the error names the cycle | `load.rs::a_cycle_is_reported_naming_the_cycle`, `tests/conformance/load-import-cycle` | tested |
+| a module that is not on the path | `load.rs::a_missing_module_names_no_directory`, `tests/conformance/load-missing-module` | tested |
+| only the main module may declare `start` | `load.rs::only_the_main_module_may_declare_start`, `tests/conformance/load-start-outside-main` | tested |
+| the main module must declare `start`, in one of the four forms [9.1] | — | todo |
+| imports are not transitive | — | todo |
+| one flat namespace per module; an imported module's name occupies it | — | todo |
+| `std` is imported automatically; `std::name` always reaches the library | — | todo |
+| a top-level declaration hides a library name; the unhidable list | — | todo |
+| `private` across modules, including private record fields | — | todo |
+| qualification has one level only: no `A::B::c` | — | todo |
+
+## Other semantics [4.2]–[4.4], [7] — Phase 2
 
 Rows are added as each rule is implemented, with its negative test. The enumeration to
 work through is the Phase 2 checklist in `TODO.md`, which was derived from these

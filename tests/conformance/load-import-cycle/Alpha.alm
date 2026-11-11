@@ -1,0 +1,7 @@
+# [4.1]: "the imports must not form a cycle (a compile error that names the cycle)".
+import Beta;
+
+proc start()
+begin
+  Beta::go();
+end;
