@@ -21,11 +21,23 @@ fn repo_root() -> PathBuf {
         .expect("repo root")
 }
 
-/// Every `.alm` file under `tests/`, with its path relative to the root.
+/// Every `.alm` file under `tests/` that is *meant* to be valid.
+///
+/// A `compile-error` test holds invalid Alúma deliberately, so lexing or parsing it
+/// cleanly is not the goal — the conformance harness checks those by running the
+/// compiler and comparing the diagnostics against the `#!error` annotations.
 fn modules(root: &Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
     let mut stack = vec![root.join("tests")];
     while let Some(dir) = stack.pop() {
+        if dir.join("test.manifest").is_file() {
+            match almtest::manifest::load(&dir) {
+                Ok(m) if m.mode == almtest::Mode::CompileError => continue,
+                Ok(_) => {}
+                // A manifest that will not load is the corpus test's problem, not ours.
+                Err(_) => continue,
+            }
+        }
         let Ok(entries) = std::fs::read_dir(&dir) else {
             continue;
         };

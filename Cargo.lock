@@ -18,6 +18,7 @@ name = "almc0"
 version = "0.0.0"
 dependencies = [
  "alm-core",
+ "almtest",
 ]
 
 [[package]]

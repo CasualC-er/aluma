@@ -1,0 +1,8 @@
+# [6]: relations are non-associative, so `rel` in [10] takes at most one operator.
+# A chain is a syntax error, not a left-associated comparison of a bool with an int.
+proc f(a: int, b: int, c: int): bool
+  var r: bool;
+begin
+  r := a < b < c;   #!error: comparisons do not chain
+  return r;
+end;

@@ -67,8 +67,8 @@ path, so that diagnostic text cannot depend on `--path` or on where the tree liv
 (ADR-008). Negative tests are written alongside each rule, and `tests/conformance/matrix.md`
 is what makes "alongside" checkable.
 
-- [ ] `almc0` driver: a binary taking source files and the [8.9] options, writing diagnostics to standard error — without it nothing in the corpus is actually run
-- [ ] Harness runner: invoke the driver for `compile-ok` and `compile-error` tests, so the 29 extracted `compile-ok` tests become real conformance tests
+- [x] `almc0` driver: a binary taking source files and the [8.9] options, writing diagnostics to standard error; exit 0 clean, 1 rejected, 2 invoked wrongly
+- [x] Harness runner: invokes the driver for `compile-ok` and `compile-error` tests; 32 of the 61 tests now run for real, 29 wait on a backend
 
 - [ ] Module loader: file = module, `--path` order, implementation modules last, `Net` overridable [4.1]
 - [ ] Import graph: not transitive, no self-import, acyclic with the cycle named in the error

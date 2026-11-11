@@ -1,0 +1,12 @@
+# [2]: "A literal larger than the largest `int` is a compile error, except that
+# 9223372036854775808 (and 0x8000000000000000) is accepted as the operand of `_`,
+# which gives the smallest `int`."
+proc f()
+  var small: int;
+  var big: int;
+begin
+  small := _9223372036854775808;
+  big := 9223372036854775808;      #!error: only as the operand of `_`
+  small := _0x8000000000000000;
+  big := 0x8000000000000001;       #!error: larger than the largest `int`
+end;

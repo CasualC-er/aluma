@@ -13,6 +13,11 @@ phase.
 
 Status values: `tested` (a test pins it), `partial` (some cases pinned), `todo`.
 
+A row naming a directory under `tests/conformance/` is a test the compiler binary is
+actually run against, end to end, by `src/almc0/tests/conformance.rs`. A row naming a
+Rust test is a unit test of a component. Both count, but only the first kind proves the
+diagnostic a user sees.
+
 Where a test lives:
 
 | Place | Holds |
@@ -33,8 +38,8 @@ enumerate those, and rows are added here as each is implemented.
 
 | § | Rule | Test | Status |
 |---|---|---|---|
-| [2] | a literal larger than the largest `int`, except `9223372036854775808` / `0x8000000000000000` under `_` | `lex.rs::the_over_max_rule_and_its_two_spellings`, `parse.rs::the_over_max_literal_is_legal_only_under_underscore` | tested |
-| [2] | any escape outside `\n \t \r \0 \\ \' \" \u{h}` | `lex.rs::the_escape_set_is_exactly_the_one_in_the_spec` | tested |
+| [2] | a literal larger than the largest `int`, except `9223372036854775808` / `0x8000000000000000` under `_` | `lex.rs::the_over_max_rule_and_its_two_spellings`, `parse.rs::the_over_max_literal_is_legal_only_under_underscore`, `tests/conformance/lex-over-max-literal` | tested |
+| [2] | any escape outside `\n \t \r \0 \\ \' \" \u{h}` | `lex.rs::the_escape_set_is_exactly_the_one_in_the_spec`, `tests/conformance/lex-escape-set` | tested |
 | [2] | a literal cannot contain a raw line break | `lex.rs::a_literal_cannot_hold_a_raw_line_break` | tested |
 | [2] | a char literal denotes exactly one code point | `lex.rs::a_char_literal_is_exactly_one_code_point` | tested |
 | [2] | a `fixed` literal is decimal (amendment A-001) | `lex.rs::a_fixed_literal_is_decimal_only` | tested |
@@ -46,7 +51,7 @@ enumerate those, and rows are added here as each is implemented.
 | [5] | calling a function as a plain statement; `void` on a procedure with no result | — | todo |
 | [7.4] | `/` with two `int` operands | — | todo |
 | [7.4] | two different tags in `+`, `-` or a comparison | — | todo |
-| [10] | relations do not chain | `parse.rs::relations_do_not_chain` | tested |
+| [10] | relations do not chain | `parse.rs::relations_do_not_chain`, `tests/conformance/parse-relations-do-not-chain` | tested |
 | [10] | every other shape of syntax error | `parse.rs::a_negative_test_for_each_shape_of_syntax_error` | partial |
 
 ## Lexical structure [2]

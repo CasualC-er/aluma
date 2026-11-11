@@ -1,0 +1,4 @@
+# name: comparisons do not chain
+# source: documentation/language_reference.md:6 (non-associative relations)
+mode = compile-error
+main = Chain.alm

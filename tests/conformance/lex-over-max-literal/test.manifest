@@ -1,0 +1,4 @@
+# name: the over-max integer literal is legal only under `_`
+# source: documentation/language_reference.md:2 (integer literals)
+mode = compile-error
+main = OverMax.alm

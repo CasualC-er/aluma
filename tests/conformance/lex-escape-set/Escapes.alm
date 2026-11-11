@@ -1,0 +1,14 @@
+# [2]: "Inside a char or string literal, \n is a line feed, \t a tab, \r a carriage
+# return, \0 the code point 0, \\ a backslash, \' a single quote, \" a double quote,
+# and \u{h} the code point whose hexadecimal value is h. Any other escape is a
+# compile error."
+proc f()
+  var s: ref array of char;
+  var c: char;
+begin
+  s := "\n\t\r\0\\\'\"";
+  c := '\u{10FFFF}';
+  s := "\a";              #!error: is not an escape
+  c := '\x41';            #!error: is not an escape
+  c := '\u{D800}';        #!error: not a Unicode code point
+end;

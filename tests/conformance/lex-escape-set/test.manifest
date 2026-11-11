@@ -1,0 +1,4 @@
+# name: only the eight escapes of [2] are accepted
+# source: documentation/language_reference.md:2 (escapes)
+mode = compile-error
+main = Escapes.alm

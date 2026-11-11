@@ -10,5 +10,10 @@ publish.workspace = true
 [dependencies]
 alm-core = { workspace = true }
 
+[dev-dependencies]
+# The conformance harness, used by the corpus integration test. A dev-dependency
+# rather than a dependency: the compiler must not depend on its own test harness.
+almtest = { path = "../almtest" }
+
 [lints.rust]
 unsafe_code = "forbid"
