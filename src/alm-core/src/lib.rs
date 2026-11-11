@@ -8,6 +8,7 @@
 //! Bracketed section numbers in this crate point into
 //! `documentation/language_reference.md`.
 
+pub mod decimal;
 pub mod diag;
 pub mod exception;
 pub mod options;

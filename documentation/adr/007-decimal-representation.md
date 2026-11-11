@@ -56,6 +56,18 @@ number by construction.
 Aligning limbs at the decimal point, which would make `rescale` cheaper, is therefore a
 stated non-goal.
 
+## The compile-time bignum is a different thing
+
+The paragraph above is about a **stored** `fixed(p, s)`, whose radix is observable
+through the size and step tables. The compiler also needs unbounded decimal arithmetic
+to fold constants, where no size or step rule applies: an intermediate of `+`, `-` or
+`*` is "exact however many digits it needs" [7.4] and is measured by nothing.
+
+`alm_core::decimal` is therefore free to use whatever radix is easiest to get right, and
+uses base 10⁹ so that every limb product fits a `u64`. That is not a second
+representation of the same thing: it is the unbounded intermediate, and the two meet
+only at an assignment, where the value is range-checked against a declared `p` and `s`.
+
 ## Consequences
 
 - Multiplication of two limbs needs `u128`; available in Rust, no bignum dependency.
