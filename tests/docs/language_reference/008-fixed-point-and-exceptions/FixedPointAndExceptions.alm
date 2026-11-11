@@ -1,0 +1,38 @@
+exception BadPrice;
+
+proc addTax(price: fixed(7,2), tax: fixed(7,2))
+begin
+  tax := rounded price * 0v19;   # 3.7981 rounds to 3.80
+  if tax < 0v00 then
+    raise BadPrice;
+  end;
+end;
+
+proc safeAdd(): fixed(7,2)
+  var price: fixed(7,2);
+  var tax: fixed(7,2);
+begin
+  price := 19v99;
+  try
+    addTax(price, tax);
+  catch BadPrice do
+    tax := 0v00;
+  catch do
+    tax := 0v00;
+  end;
+  return tax;
+end;
+
+proc split(total: fixed(7,2), n: fixed(3,0)): fixed(7,2)
+  var part: fixed(7,2);
+begin
+  part := rounded total / n;
+  return part;
+end;
+
+proc parsePrice(text: String): fixed(7,2)
+  var price: fixed(7,2);
+begin
+  price := strFixed(text, 2);
+  return price;
+end;

@@ -1,0 +1,9 @@
+import IntList;
+
+proc start(): int
+  var l: IntList::List;
+begin
+  IntList::push(l, 4);
+  assert(IntList::pop(l) = 4);
+  return 0;
+end;

@@ -1,0 +1,12 @@
+# name: 9. Exceptions
+# source: documentation/guide.md:519
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = run
+main = 9Exceptions.alm
+exit = 0
+
+[stdout]
+uncaught Overflow in Stats::sum (task 1)
+  evaluating: total + x
+  called from: Stats::average
+  called from: App::start

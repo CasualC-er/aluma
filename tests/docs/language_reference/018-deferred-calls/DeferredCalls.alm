@@ -1,0 +1,12 @@
+proc show(path: String)
+  var f: File;
+  var line: String;
+begin
+  f := open(path, ModeRead);
+  defer close(f);
+  line := readLine(f);
+  while not line ~ nil do
+    writeLine(line);
+    line := readLine(f);
+  end;
+end;

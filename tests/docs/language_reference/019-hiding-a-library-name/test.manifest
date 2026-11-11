@@ -1,0 +1,8 @@
+# name: Hiding a library name
+# source: documentation/language_reference.md:1346
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = run
+main = HidingALibraryName.alm
+exit = 0
+
+[stdout] ignore

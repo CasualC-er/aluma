@@ -1,0 +1,96 @@
+import Net;
+
+const Keep is 64;
+
+exception RoomFailed;
+
+type Line is record
+  text: String;
+end;
+
+type Log is record
+  head: int;
+  lines: array [Keep] of String;
+end;
+
+proc room(queue: inbox of Line, pub: publisher of Log)
+  var log: ref Log;
+  var msg: ref Line;
+begin
+  log := new(Log);
+  while true do
+    await(queue, msg);
+    log.lines[log.head mod Keep] := msg.text;
+    log.head := log.head + 1;
+    while receive(queue, msg) do
+      log.lines[log.head mod Keep] := msg.text;
+      log.head := log.head + 1;
+    end;
+    publish(pub, log);
+  end;
+end;
+
+proc writer(feed: view of Log, output: File)
+  var seen: Version;
+  var log: ref Log;
+  var cursor: int;
+begin
+  defer close(output);
+  seen := 0;
+  cursor := 0;
+  try
+    while true do
+      seen := awaitChange(feed, seen);
+      log := latest(feed);
+      if log.head - cursor > Keep then
+        cursor := log.head - Keep;
+      end;
+      while cursor < log.head do
+        writeLine(output, log.lines[cursor mod Keep]);
+        cursor := cursor + 1;
+      end;
+    end;
+  catch DeadTask, Net::ConnectionReset, IOError do
+  end;
+end;
+
+proc session(toRoom: mailbox of Line, feed: view of Log,
+             input: File, output: File)
+  var msg: ref Line;
+  var text: String;
+begin
+  defer close(input);
+  void spawn(writer, feed, output);
+  try
+    text := readLine(input);
+    while not (text ~ nil) do
+      msg := new(Line);
+      msg.text := text;
+      send(toRoom, msg);
+      text := readLine(input);
+    end;
+  catch Net::ConnectionReset, IOError do
+  end;
+end;
+
+proc start(): int
+  var listener: Net::Listener;
+  var input: File;
+  var output: File;
+  var pub: publisher of Log;
+  var feed: view of Log;
+  var roomH: task of Line;
+begin
+  listener := Net::listen(9000);
+  defer Net::close(listener);
+  newView(pub, feed);
+  roomH := spawn(room, pub);
+  while true do
+    Net::accept(listener, input, output);
+    if failed(roomH) then
+      raise RoomFailed;
+    end;
+    disown(spawn(session, link(roomH), feed, input, output));
+  end;
+  return 0;
+end;

@@ -34,8 +34,8 @@ parallel with the phase above it.
 - [x] ADR-014 `--strict-steps` × `--steps` invariance as a CI property test (D14)
 - [x] `documentation/ir.md` — skeleton, declared normative for both compilers and the backend
 - [x] `documentation/amendments.md` — log for spec changes the implementation forces
-- [ ] **Conformance harness first** (D13.4): test = `.alm` + expected exit status, stdout, stderr, options
-- [ ] Extract every code example from the reference, guide and style guide into `tests/docs/`, with the outcomes the docs state
+- [x] **Conformance harness first** (D13.4): a test is a *directory* — main module + further modules + options + `args` + `[stdin]` + expected exit status, stdout, stderr or diagnostics; `run` / `compile-ok` / `compile-error` modes, with `#!error` line annotations for the errors [11] states inline
+- [x] Extract every code example from the reference, guide and style guide into `tests/docs/`, with the outcomes the docs state
 - [ ] Conformance matrix: every numbered spec rule → its test(s)
 
 ## Phase 1 — Lexer and parser (`almc0`)

@@ -1,0 +1,49 @@
+type Counter is record
+  value: int;
+end;
+
+type Done is record
+  seen: int;
+end;
+
+proc ticker(pub: publisher of Counter)
+  var c: ref Counter;
+begin
+  c := new(Counter);
+  while c.value < 3 do
+    c.value := c.value + 1;
+    publish(pub, c);
+    sync();
+  end;
+end;
+
+proc watcher(feed: view of Counter, parent: mailbox of Done)
+  var seen: Version;
+  var c: ref Counter;
+  var d: ref Done;
+begin
+  seen := 0;
+  try
+    while true do
+      seen := awaitChange(feed, seen);
+    end;
+  catch DeadTask do
+  end;
+  c := latest(feed);
+  d := new(Done);
+  d.seen := c.value;
+  send(parent, d);
+end;
+
+proc start(queue: inbox of Done): int
+  var pub: publisher of Counter;
+  var feed: view of Counter;
+  var d: ref Done;
+begin
+  newView(pub, feed);
+  void spawn(watcher, feed, self(queue));
+  void spawn(ticker, pub);
+  await(queue, d);
+  writeLine(concat("last ", intStr(d.seen)));
+  return 0;
+end;

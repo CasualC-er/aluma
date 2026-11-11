@@ -1,0 +1,14 @@
+proc largest(values: ref array of int): int
+  var best: int;
+  var i: int;
+begin
+  best := values[0];
+  i := 1;
+  while i < len(values) do
+    if values[i] > best then
+      best := values[i];
+    end;
+    i := i + 1;
+  end;
+  return best;
+end;

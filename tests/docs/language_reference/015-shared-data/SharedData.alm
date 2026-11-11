@@ -1,0 +1,11 @@
+import Tables;
+
+proc start(): int
+begin
+  try
+    Tables::Squares[3] := 0;
+  catch ReadOnly do
+    writeLine("read-only");
+  end;
+  return Tables::square(12);
+end;

@@ -11,6 +11,13 @@ const SECTIONS: &[&str] = &["stdout", "stderr", "diagnostics", "stdin"];
 pub enum Mode {
     /// Compile, link, run; compare exit status, stdout and stderr.
     Run,
+    /// Must compile without a diagnostic. Nothing is run.
+    ///
+    /// Most of the spec's own examples are this shape: [11] is largely sets of
+    /// declarations with no `start`, so there is nothing to execute, but they must still
+    /// be accepted. Without this mode two thirds of the doc corpus could not be
+    /// expressed at all.
+    CompileOk,
     /// Compilation must fail; compare the diagnostics. Nothing is run.
     CompileError,
 }
@@ -246,6 +253,7 @@ impl Manifest {
         let (mode_line, mode_text) = keys.get("mode").cloned().unwrap_or((0, "run".to_owned()));
         let mode = match mode_text.as_str() {
             "run" => Mode::Run,
+            "compile-ok" => Mode::CompileOk,
             "compile-error" => Mode::CompileError,
             _ => {
                 return Err(ParseError::BadValue {
@@ -313,9 +321,14 @@ impl Manifest {
     /// agree with the declared mode.
     pub fn add_annotations(&mut self, module: &str, source: &str) -> Result<(), ParseError> {
         let found = annotations(module, source);
-        if !found.is_empty() && self.mode == Mode::Run {
+        if !found.is_empty() && self.mode != Mode::CompileError {
             return Err(ParseError::ModeConflict(format!(
-                "{module} carries #!error annotations but mode = run"
+                "{module} carries #!error annotations but mode = {}",
+                match self.mode {
+                    Mode::Run => "run",
+                    Mode::CompileOk => "compile-ok",
+                    Mode::CompileError => "compile-error",
+                }
             )));
         }
         self.expected_errors.extend(found);
@@ -329,6 +342,13 @@ impl Manifest {
     /// section passes on *any* compiler failure — including one about a different line,
     /// or a crash — which is worse than no test, because it looks like coverage.
     pub fn validate(&self) -> Result<(), ParseError> {
+        if self.mode == Mode::CompileOk && self.diagnostics != Expect::Ignore {
+            return Err(ParseError::NothingAsserted(format!(
+                "{}: a compile-ok test expects no diagnostics, so a [diagnostics] \
+                 section contradicts it",
+                self.dir.display()
+            )));
+        }
         if self.mode == Mode::CompileError
             && self.expected_errors.is_empty()
             && self.diagnostics == Expect::Ignore
@@ -741,6 +761,30 @@ mod tests {
         assert!(matches!(
             Manifest::parse("t", "main = M.alm\nnot a pair\n"),
             Err(ParseError::BadLine { .. })
+        ));
+    }
+
+    #[test]
+    fn compile_ok_is_the_mode_for_a_declaration_set() {
+        // [11]'s examples are mostly declarations with no `start`: nothing runs, but
+        // the compiler must accept them.
+        let m = Manifest::parse("t", "mode = compile-ok\nmain = Tree.alm\n").unwrap();
+        assert_eq!(m.mode, Mode::CompileOk);
+        m.validate().unwrap();
+
+        // It cannot also expect diagnostics.
+        let contradictory = Manifest::parse(
+            "t",
+            "mode = compile-ok\nmain = T.alm\n\n[diagnostics]\nT.alm:1:1: error: no\n",
+        )
+        .unwrap();
+        assert!(matches!(contradictory.validate(), Err(ParseError::NothingAsserted(_))));
+
+        // And an #!error annotation contradicts it too.
+        let mut annotated = Manifest::parse("t", "mode = compile-ok\nmain = T.alm\n").unwrap();
+        assert!(matches!(
+            annotated.add_annotations("T.alm", "x := 1; #!error\n"),
+            Err(ParseError::ModeConflict(_))
         ));
     }
 

@@ -1,0 +1,38 @@
+exception Empty;
+
+type Cell is record
+  value: int;
+  link: ref Cell;
+end;
+
+type List is record
+  private head: ref Cell;
+  private size: int;
+end;
+
+private proc drop(l: List)
+begin
+  l.head := l.head.link;
+  l.size := l.size - 1;
+end;
+
+proc push(l: List, x: int)
+  var c: ref Cell;
+begin
+  c := new(Cell);
+  c.value := x;
+  c.link := l.head;
+  l.head := c;
+  l.size := l.size + 1;
+end;
+
+proc pop(l: List): int
+  var x: int;
+begin
+  if l.head ~ nil then
+    raise Empty;
+  end;
+  x := l.head.value;
+  drop(l);
+  return x;
+end;

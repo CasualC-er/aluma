@@ -1,0 +1,56 @@
+generic type K;
+generic type V;
+generic proc equal(a: K, b: K): bool;
+
+exception Missing;
+
+type Entry is record
+  key: K;
+  value: V;
+end;
+
+type Table is record
+  entries: ref array of Entry;
+  private used: int;
+end;
+
+proc get(t: Table, key: K): V
+  var i: int;
+begin
+  i := 0;
+  while i < t.used do
+    if equal(t.entries[i].key, key) then
+      return t.entries[i].value;
+    end;
+    i := i + 1;
+  end;
+  raise Missing;
+end;
+
+proc put(t: Table, key: K, value: V)
+  var bigger: ref array of Entry;
+  var i: int;
+begin
+  i := 0;
+  while i < t.used do
+    if equal(t.entries[i].key, key) then
+      t.entries[i].value := value;
+      return;
+    end;
+    i := i + 1;
+  end;
+  if t.entries ~ nil then
+    t.entries := new(array of Entry, 4);
+  elsif t.used = len(t.entries) then
+    bigger := new(array of Entry, t.used * 2);
+    i := 0;
+    while i < t.used do
+      bigger[i] := t.entries[i];
+      i := i + 1;
+    end;
+    t.entries := bigger;
+  end;
+  t.entries[t.used].key := key;
+  t.entries[t.used].value := value;
+  t.used := t.used + 1;
+end;

@@ -1,0 +1,14 @@
+proc apply(f: proc(int): int, x: int): int
+begin
+  return f(x);
+end;
+
+proc double(n: int): int
+begin
+  return n * 2;
+end;
+
+proc start(): int
+begin
+  return apply(double, 21);
+end;

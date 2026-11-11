@@ -1,0 +1,8 @@
+# name: 8.2 Procedure parameters
+# source: documentation/guide.md:486
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = run
+main = 82ProcedureParameters.alm
+exit = 0
+
+[stdout] ignore

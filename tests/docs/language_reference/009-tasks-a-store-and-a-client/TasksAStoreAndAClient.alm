@@ -1,0 +1,66 @@
+const Size is 100;
+enum Get, Put;
+
+type Reply is record
+  found: bool;
+  value: int;
+end;
+
+type Request is record
+  kind: int;
+  key: int;
+  value: int;
+  back: reply of Reply;
+end;
+
+proc store(queue: inbox of Request)
+  var table: array [Size] of int;
+  var present: array [Size] of bool;
+  var req: ref Request;
+  var rep: ref Reply;
+begin
+  while true do
+    await(queue, req);
+    rep := new(Reply);
+    if req.kind = Put then
+      table[req.key] := req.value;
+      present[req.key] := true;
+    elsif req.kind = Get then
+      rep.found := present[req.key];
+      rep.value := table[req.key];
+    end;
+    answer(req.back, rep);
+  end;
+end;
+
+proc client(queue: inbox of Reply, server: mailbox of Request,
+            parent: mailbox of Reply)
+  var req: ref Request;
+  var rep: ref Reply;
+begin
+  req := new(Request);
+  req.kind := Put;
+  req.key := 7;
+  req.value := 42;
+  req.back := replyTo(queue);
+  send(server, req);
+  await(queue, rep);
+  req := new(Request);
+  req.kind := Get;
+  req.key := 7;
+  req.back := replyTo(queue);
+  send(server, req);
+  await(queue, rep);
+  send(parent, rep);
+end;
+
+proc start(queue: inbox of Reply): int
+  var s: task of Request;
+  var rep: ref Reply;
+begin
+  s := spawn(store);
+  void spawn(client, link(s), self(queue));
+  await(queue, rep);
+  writeLine(concat("value ", intStr(rep.value)));
+  return 0;
+end;

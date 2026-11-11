@@ -1,0 +1,40 @@
+generic type T;
+
+exception Empty;
+
+type Cell is record
+  value: T;
+  link: ref Cell;
+end;
+
+type Stack is record
+  top: ref Cell;
+  private size: int;
+end;
+
+proc push(s: Stack, x: T)
+  var c: ref Cell;
+begin
+  c := new(Cell);
+  c.value := x;
+  c.link := s.top;
+  s.top := c;
+  s.size := s.size + 1;
+end;
+
+proc pop(s: Stack): T
+  var x: T;
+begin
+  if s.top ~ nil then
+    raise Empty;
+  end;
+  x := s.top.value;
+  s.top := s.top.link;
+  s.size := s.size - 1;
+  return x;
+end;
+
+proc count(s: Stack): int
+begin
+  return s.size;
+end;

@@ -1,0 +1,8 @@
+# name: Named number types
+# source: documentation/language_reference.md:1366
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = run
+main = NamedNumberTypes.alm
+exit = 0
+
+[stdout] ignore

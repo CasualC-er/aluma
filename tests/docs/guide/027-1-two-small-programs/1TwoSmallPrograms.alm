@@ -1,0 +1,12 @@
+proc start(): int
+  var line: String;
+  var total: int;
+begin
+  line := readLine();
+  while not line ~ nil do
+    total := total + strInt(line);
+    line := readLine();
+  end;
+  writeLine(concat("total ", intStr(total)));
+  return 0;
+end;

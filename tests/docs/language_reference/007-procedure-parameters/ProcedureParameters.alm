@@ -1,0 +1,22 @@
+proc ascending(x: int, y: int): bool
+begin
+  return x < y;
+end;
+
+proc insertionSort(a: ref array of int, less: proc(int, int): bool)
+  var i: int;
+  var j: int;
+  var x: int;
+begin
+  i := 1;
+  while i < len(a) do
+    x := a[i];
+    j := i - 1;
+    while (j >= 0) and less(x, a[j]) do
+      a[j + 1] := a[j];
+      j := j - 1;
+    end;
+    a[j + 1] := x;
+    i := i + 1;
+  end;
+end;

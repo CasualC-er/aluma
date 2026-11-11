@@ -1,0 +1,5 @@
+# name: 4.4 References
+# source: documentation/guide.md:159
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = compile-ok
+main = 44References.alm

@@ -1,0 +1,5 @@
+# name: Strings
+# source: documentation/language_reference.md:875
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = compile-ok
+main = Strings.alm

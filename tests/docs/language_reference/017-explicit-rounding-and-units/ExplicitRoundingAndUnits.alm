@@ -1,0 +1,13 @@
+proc start(): int
+  var a: fixed(7,3);
+  var b: fixed(7,2);
+  var c: fixed(7,4);
+  var n: int;
+begin
+  a := divide(1v0, 8v0, 3);
+  b := rescale(2v675, 2, RoundHalfEven);
+  c := divide(1v00, 3v00, 4, RoundHalfAway);
+  n := floor(_2v5);
+  n := n + units(12v50) + sign(c);
+  return n mod 256;
+end;

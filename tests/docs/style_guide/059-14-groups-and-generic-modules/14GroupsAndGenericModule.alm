@@ -1,0 +1,19 @@
+import Names is Lookup(String, int, stringEqual);
+
+type Person is record
+  name: String;
+  age: int;
+end;
+
+import People is Lookup(String, Person, stringEqual);
+
+proc start(): int
+  var ages: Names::Table;
+  var people: People::Table;
+  var ann: Person;
+begin
+  Names::put(ages, "ann", 31);
+  ann.age := Names::get(ages, "ann");
+  People::put(people, "ann", ann);
+  return People::get(people, "ann").age;
+end;

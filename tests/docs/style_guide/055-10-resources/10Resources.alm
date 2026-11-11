@@ -1,0 +1,7 @@
+proc firstLine(path: String): String
+  var f: File;
+begin
+  f := open(path, ModeRead);
+  defer close(f);
+  return readLine(f);
+end;

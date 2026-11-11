@@ -1,0 +1,5 @@
+# name: 2. Layout
+# source: documentation/style_guide.md:38
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = compile-ok
+main = 2Layout.alm

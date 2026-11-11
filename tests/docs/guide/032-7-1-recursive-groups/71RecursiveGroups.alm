@@ -1,0 +1,15 @@
+proc isEven(n: int): bool
+begin
+  if n = 0 then
+    return true;
+  end;
+  return isOdd(n - 1);
+end;
+
+also proc isOdd(n: int): bool
+begin
+  if n = 0 then
+    return false;
+  end;
+  return isEven(n - 1);
+end;

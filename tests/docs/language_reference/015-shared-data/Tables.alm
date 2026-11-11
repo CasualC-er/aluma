@@ -1,0 +1,19 @@
+private proc squares(n: int): ref array of int
+  var a: ref array of int;
+  var i: int;
+begin
+  a := new(array of int, n);
+  i := 0;
+  while i < n do
+    a[i] := i * i;
+    i := i + 1;
+  end;
+  return a;
+end;
+
+share Squares: ref array of int is squares(1000);
+
+proc square(i: int): int
+begin
+  return Squares[i];
+end;
