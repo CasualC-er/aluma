@@ -360,10 +360,40 @@ impl Parser<'_, '_> {
     /// semantic phase reinterprets if it turns out to name a value; anything that can
     /// only be one of the two is parsed as that.
     fn generic_arg(&mut self) -> Option<GenericArg> {
+        // A bare name is where the two sides of `garg` overlap, and only the token
+        // *after* it decides: `G(Count)` is ambiguous and stays a type for Phase 2 to
+        // reinterpret, while `G(Count + 1)` can only be an expression. Taking every
+        // name as a type would reject the second — which [10] allows, since `garg`
+        // admits any `expr`.
+        if matches!(self.peek_kind(), TokenKind::Ident(_)) {
+            return if self.name_is_whole_argument() {
+                Some(GenericArg::Type(self.ty()?))
+            } else {
+                Some(GenericArg::Expr(self.expr()?))
+            };
+        }
         if self.starts_type() {
             return Some(GenericArg::Type(self.ty()?));
         }
         Some(GenericArg::Expr(self.expr()?))
+    }
+
+    /// Does the `qident` at the cursor run to the end of this argument?
+    ///
+    /// True for `G(Count)` and `G(M::Count)`, false for `G(Count + 1)` or `G(f(x))`.
+    fn name_is_whole_argument(&self) -> bool {
+        // ident, or ident :: ident
+        let mut after = self.at + 1;
+        if matches!(
+            self.tokens.get(after).map(|t| &t.kind),
+            Some(TokenKind::Glyph(Glyph::ColonColon))
+        ) {
+            after += 2;
+        }
+        matches!(
+            self.tokens.get(after).map(|t| &t.kind),
+            Some(TokenKind::Glyph(Glyph::Comma) | TokenKind::Glyph(Glyph::RightParen))
+        )
     }
 
     fn starts_type(&self) -> bool {
@@ -1278,6 +1308,30 @@ mod tests {
         let type_at = lines.iter().position(|l| l.starts_with("type X")).unwrap();
         assert!(generic_at < import_at && import_at < type_at, "{dump}");
         assert!(dump.contains("instance Names is Lookup"), "{dump}");
+    }
+
+    #[test]
+    fn a_generic_argument_may_be_a_type_or_an_expression() {
+        // `garg = type | expr` [10]. A bare name stays a type for Phase 2 to resolve
+        // [4.4]; anything that can only be an expression is parsed as one.
+        let dump = ok("import A is G(int);\n\
+                       import B is G(Count);\n\
+                       import C is G(Count + 1);\n\
+                       import D is G(10);\n\
+                       import E is G(ref Node);\n\
+                       import F is G(M::Thing);\n\
+                       import H is G(int, Count + 1, less);\n");
+        assert!(
+            dump.contains("binary +"),
+            "an expression argument must parse: {dump}"
+        );
+        assert!(
+            dump.contains("named Count"),
+            "a bare name stays a type: {dump}"
+        );
+        assert!(dump.contains("named M::Thing"), "{dump}");
+        assert!(dump.contains("ref Node"), "{dump}");
+        assert!(dump.contains("int 10"), "{dump}");
     }
 
     #[test]
