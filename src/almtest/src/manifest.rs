@@ -778,7 +778,10 @@ mod tests {
             "mode = compile-ok\nmain = T.alm\n\n[diagnostics]\nT.alm:1:1: error: no\n",
         )
         .unwrap();
-        assert!(matches!(contradictory.validate(), Err(ParseError::NothingAsserted(_))));
+        assert!(matches!(
+            contradictory.validate(),
+            Err(ParseError::NothingAsserted(_))
+        ));
 
         // And an #!error annotation contradicts it too.
         let mut annotated = Manifest::parse("t", "mode = compile-ok\nmain = T.alm\n").unwrap();
