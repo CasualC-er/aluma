@@ -20,6 +20,16 @@ use alm_core::span::{SourceId, Span};
 
 use crate::token::{Glyph, IntValue, Keyword, Token, TokenKind};
 
+/// What ends a line, for the rule that "a literal cannot contain a raw line break" [2].
+///
+/// Both ASCII line terminators count, so a literal left open at the end of a line in a
+/// CRLF file is reported there instead of running into the next line. Outside a literal
+/// both are ordinary whitespace, and `alm_core::span::line_col` counts lines by `\n`,
+/// which agrees with this for LF and CRLF files alike.
+fn is_line_break(b: u8) -> bool {
+    b == b'\n' || b == b'\r'
+}
+
 pub struct Lexer<'s> {
     source: &'s str,
     bytes: &'s [u8],
@@ -30,11 +40,37 @@ pub struct Lexer<'s> {
 /// Lex a whole source file. Always returns a token list ending in `Eof`; check
 /// `diags.has_errors()` for whether it is trustworthy.
 pub fn lex(id: SourceId, source: &str, diags: &mut Diagnostics) -> Vec<Token> {
+    // Spans are `u32` byte offsets, so a source file has to fit in one. Four gibibytes
+    // of Alúma is not a real program, but a silently wrapped span would point a
+    // diagnostic — or a [7.5] report snippet — at the wrong text, which is worse than
+    // refusing the file.
+    if source.len() > u32::MAX as usize {
+        diags.error(
+            Span::new(id, 0, 0),
+            format!(
+                "this source file is {} bytes; the compiler handles files up to {}",
+                source.len(),
+                u32::MAX
+            ),
+        );
+        return vec![Token {
+            kind: TokenKind::Eof,
+            span: Span::new(id, 0, 0),
+        }];
+    }
+    // A leading byte order mark is legal UTF-8 but is not part of the program text, and
+    // an editor may add one unasked. Skipping it costs nothing and moves no span that
+    // matters, since it can only appear at offset 0.
+    let at = if source.starts_with('\u{feff}') {
+        '\u{feff}'.len_utf8()
+    } else {
+        0
+    };
     let mut lexer = Lexer {
         source,
         bytes: source.as_bytes(),
         id,
-        at: 0,
+        at,
     };
     let mut out = Vec::new();
     loop {
@@ -90,13 +126,25 @@ impl<'s> Lexer<'s> {
     }
 
     fn next_token(&mut self, diags: &mut Diagnostics) -> Token {
+        // A loop, not recursion: a file of stray characters would otherwise grow the
+        // stack once per character. 200,000 of them must give a diagnostic, not a crash.
+        loop {
+            if let Some(token) = self.one_token(diags) {
+                return token;
+            }
+        }
+    }
+
+    /// One token, or `None` when the text at the cursor was rejected and the caller
+    /// should try again from the new position.
+    fn one_token(&mut self, diags: &mut Diagnostics) -> Option<Token> {
         self.skip_trivia();
         let start = self.at;
         let Some(b) = self.peek() else {
-            return Token {
+            return Some(Token {
                 kind: TokenKind::Eof,
                 span: self.span(start),
-            };
+            });
         };
 
         let kind = match b {
@@ -107,30 +155,60 @@ impl<'s> Lexer<'s> {
             _ => match self.glyph() {
                 Some(g) => TokenKind::Glyph(g),
                 None => {
-                    // Unknown byte. Consume one character so that lexing makes
-                    // progress and the next error is a new one.
-                    let c = self.bump_char().unwrap_or('\u{fffd}');
-                    diags.error(
-                        self.span(start),
-                        if c.is_ascii() {
-                            format!("`{c}` is not a glyph of the language")
-                        } else {
-                            // Identifiers are ASCII only [2]; the likely cause is a
-                            // non-ASCII character pasted outside a comment or literal.
-                            format!(
-                                "`{c}` is not allowed here: only comments and char and \
-                                 string literals may hold non-ASCII text"
-                            )
-                        },
-                    );
-                    return self.next_token(diags);
+                    self.reject(diags, start);
+                    return None;
                 }
             },
         };
-        Token {
+        Some(Token {
             kind,
             span: self.span(start),
+        })
+    }
+
+    /// Report the text at the cursor as not lexable, and step past all of it.
+    ///
+    /// A *run* is consumed and reported once. A line of accidental paste should not give
+    /// one diagnostic per character; and a non-ASCII word must be rejected whole,
+    /// because identifiers are ASCII only [2], so `ñend` is one bad name and reporting
+    /// `ñ` alone would leave `end` in the stream as a keyword — a cascade in the worst
+    /// place, since the harness compares the set of lines carrying an error against the
+    /// set of annotated lines.
+    fn reject(&mut self, diags: &mut Diagnostics, start: usize) {
+        let first = self.bump_char().unwrap_or('\u{fffd}');
+        if first.is_ascii() {
+            // One kind of stray ASCII at a time, so `@@@` is one diagnostic while
+            // `@@@#x` stops before the comment.
+            while self.peek() == Some(first as u8) {
+                self.at += 1;
+            }
+            let repeated = self.at - start > 1;
+            diags.error(
+                self.span(start),
+                if repeated {
+                    format!("`{first}` is not a glyph of the language (repeated here)")
+                } else {
+                    format!("`{first}` is not a glyph of the language")
+                },
+            );
+            return;
         }
+        // A non-ASCII character: take the whole word it belongs to.
+        while let Some(c) = self.source[self.at..].chars().next() {
+            if c.is_ascii_alphanumeric() || !c.is_ascii() {
+                self.at += c.len_utf8();
+            } else {
+                break;
+            }
+        }
+        diags.error(
+            self.span(start),
+            format!(
+                "`{}` is not allowed here: identifiers use only ASCII letters and digits, \
+                 and only comments and char and string literals may hold other text",
+                &self.source[start..self.at]
+            ),
+        );
     }
 
     /// An identifier or a keyword: `letter { letter | digit }`, ASCII only, no
@@ -203,18 +281,10 @@ impl<'s> Lexer<'s> {
                 self.at += 1;
             }
             let frac = &self.source[frac_start..self.at];
-            // Trailing `v`-digits that run into a hex escape or a letter are a
-            // different error; catch an identifier character directly after.
-            if self.peek().is_some_and(|b| b.is_ascii_alphanumeric()) {
-                let bad = self.at;
-                while self.peek().is_some_and(|b| b.is_ascii_alphanumeric()) {
-                    self.at += 1;
-                }
-                diags.error(
-                    Span::new(self.id, bad as u32, self.at as u32),
-                    "a fixed literal ends after its digits",
-                );
-            }
+            // A letter directly after is NOT an error here. `12abc` lexes as `12` and
+            // `abc`, and the parser rejects the pair; `12v50abc` must behave the same
+            // way, or the lexer invents a rule [2] does not have and the two spellings
+            // disagree for no reason.
             // The scale is the number of digits after `v` [2], so `0v05` is scale 2 and
             // `5v0` is scale 1. Keeping the digits verbatim preserves that.
             return TokenKind::Fixed {
@@ -272,9 +342,9 @@ impl<'s> Lexer<'s> {
                     diags.error(self.span(start), "this char literal is not closed");
                     break;
                 }
-                Some(b'\n') => {
-                    // Do not consume the line break: it ends the literal's line and the
-                    // next line should lex normally.
+                Some(b) if is_line_break(b) => {
+                    // Do not consume it: the break ends this line, and the next line
+                    // must lex normally rather than being swallowed.
                     diags.error(self.span(start), "a literal cannot contain a line break");
                     break;
                 }
@@ -323,7 +393,9 @@ impl<'s> Lexer<'s> {
                     diags.error(self.span(start), "this string literal is not closed");
                     break;
                 }
-                Some(b'\n') => {
+                Some(b) if is_line_break(b) => {
+                    // Do not consume it: the break ends this line, and the next line
+                    // must lex normally rather than being swallowed.
                     diags.error(self.span(start), "a literal cannot contain a line break");
                     break;
                 }
@@ -374,6 +446,12 @@ impl<'s> Lexer<'s> {
         }
         if b == b'u' {
             return self.unicode_escape(diags, start);
+        }
+        // A backslash directly before a line break must NOT consume the line break: the
+        // literal has to end at the end of its line, or one stray backslash swallows the
+        // rest of the file. The caller's line-break arm reports it, so this is silent.
+        if is_line_break(b) {
+            return None;
         }
         let c = self.bump_char().unwrap_or('\\');
         diags.error(
@@ -798,5 +876,207 @@ mod tests {
     fn an_empty_file_is_just_eof() {
         assert_eq!(ok(""), []);
         assert_eq!(ok("   \n\t # only a comment\n"), []);
+    }
+    #[test]
+    fn a_backslash_before_a_line_break_does_not_swallow_the_file() {
+        // Regression. The escape fallback used to consume the line feed, so the literal
+        // ran on into the following lines: one stray backslash ate the rest of the file
+        // and produced a cascade of errors on lines that were fine.
+        let src = "x := \"a\\\nvar y: int;\nvar z: int;\n";
+        let mut d = Diagnostics::new();
+        let tokens = lex(S, src, &mut d);
+        let rendered: Vec<String> = d.items().iter().map(|x| x.render("T.alm", src)).collect();
+        assert_eq!(
+            rendered.len(),
+            1,
+            "one mistake, one diagnostic: {rendered:#?}"
+        );
+        assert!(rendered[0].contains("line break"), "{rendered:?}");
+        assert!(rendered[0].starts_with("T.alm:1:6:"), "{:?}", rendered[0]);
+        // The following lines must still be there.
+        let keywords = tokens
+            .iter()
+            .filter(|t| t.kind == TokenKind::Keyword(Keyword::Var))
+            .count();
+        assert_eq!(keywords, 2, "both `var` lines must survive");
+        assert!(tokens.iter().any(|t| t.kind == ident("y")));
+        assert!(tokens.iter().any(|t| t.kind == ident("z")));
+    }
+
+    #[test]
+    fn a_long_run_of_stray_characters_does_not_grow_the_stack() {
+        // Regression. `next_token` recursed once per rejected character, so a pasted
+        // blob overflowed the stack and aborted the process instead of reporting.
+        let src = "@".repeat(200_000);
+        let mut d = Diagnostics::new();
+        let tokens = lex(S, &src, &mut d);
+        assert_eq!(d.len(), 1, "a run of one kind is one diagnostic");
+        assert_eq!(tokens.len(), 1, "only Eof");
+    }
+
+    #[test]
+    fn a_non_ascii_word_is_rejected_whole() {
+        // Reporting only the first character would leave the rest in the stream — and
+        // `ñend` would contribute the keyword `end` to a program that does not have it.
+        let d = errs("var ñend: int;");
+        assert_eq!(d.len(), 1, "{d:#?}");
+        assert!(d[0].contains("ñend"), "{d:?}");
+        let mut diags = Diagnostics::new();
+        let tokens = lex(S, "var ñend: int;", &mut diags);
+        assert!(
+            !tokens
+                .iter()
+                .any(|t| t.kind == TokenKind::Keyword(Keyword::End)),
+            "the bad word must not leak a keyword"
+        );
+    }
+
+    #[test]
+    fn a_raw_carriage_return_is_a_line_break_too() {
+        // [2] forbids a raw line break in a literal; a CRLF file must not slip one
+        // through as ordinary content.
+        let e = errs("\"a\rb\"");
+        assert!(e[0].contains("line break"), "{e:?}");
+    }
+
+    #[test]
+    fn a_crlf_file_lexes_like_an_lf_one() {
+        assert_eq!(
+            ok("var x: int;\r\nvar y: int;\r\n"),
+            ok("var x: int;\nvar y: int;\n")
+        );
+    }
+
+    #[test]
+    fn a_byte_order_mark_is_not_part_of_the_program() {
+        // Editors add one unasked. It is legal UTF-8 and means nothing here.
+        assert_eq!(ok("\u{feff}var x: int;"), ok("var x: int;"));
+    }
+
+    #[test]
+    fn spans_cover_each_kind_of_literal() {
+        let src = r#"a := 42; b := 12v50; c := "hi"; d := 'x'; e := 0xFF;"#;
+        let mut d = Diagnostics::new();
+        let tokens = lex(S, src, &mut d);
+        assert!(!d.has_errors(), "{:?}", d.items());
+        let text_of = |want: &TokenKind| -> String {
+            tokens
+                .iter()
+                .find(|t| &t.kind == want)
+                .map(|t| t.span.text(src).to_owned())
+                .unwrap_or_else(|| panic!("no token {want:?}"))
+        };
+        assert_eq!(text_of(&int(42)), "42");
+        assert_eq!(
+            text_of(&TokenKind::Fixed {
+                digits: "1250".to_owned(),
+                scale: 2
+            }),
+            "12v50"
+        );
+        assert_eq!(text_of(&TokenKind::Str("hi".to_owned())), r#""hi""#);
+        assert_eq!(text_of(&TokenKind::Char('x')), "'x'");
+        assert_eq!(text_of(&int(255)), "0xFF");
+    }
+
+    #[test]
+    fn multi_byte_text_in_a_string_keeps_its_span_and_contents() {
+        // Any Unicode text may appear in a literal [2], and the span is in bytes while
+        // the contents are code points.
+        let src = "s := \"héllo ✓\";";
+        let mut d = Diagnostics::new();
+        let tokens = lex(S, src, &mut d);
+        assert!(!d.has_errors(), "{:?}", d.items());
+        let t = tokens
+            .iter()
+            .find(|t| matches!(t.kind, TokenKind::Str(_)))
+            .expect("a string token");
+        assert_eq!(t.kind, TokenKind::Str("héllo ✓".to_owned()));
+        assert_eq!(t.span.text(src), "\"héllo ✓\"");
+    }
+
+    #[test]
+    fn the_highest_code_point_is_accepted() {
+        assert_eq!(ok(r"'\u{10FFFF}'"), [TokenKind::Char('\u{10FFFF}')]);
+        assert_eq!(ok(r"'\u{10ffff}'"), [TokenKind::Char('\u{10FFFF}')]);
+    }
+
+    #[test]
+    fn a_letter_after_a_literal_is_the_parsers_business() {
+        // `12abc` is `12` then `abc`; the parser rejects the pair. `12v50abc` must agree
+        // rather than inventing a lexical rule [2] does not state.
+        assert_eq!(ok("12abc"), [int(12), ident("abc")]);
+        assert_eq!(
+            ok("12v50abc"),
+            [
+                TokenKind::Fixed {
+                    digits: "1250".to_owned(),
+                    scale: 2
+                },
+                ident("abc")
+            ]
+        );
+    }
+
+    #[test]
+    fn lexing_never_panics_and_always_terminates() {
+        // There is no oracle for this project (ADR-013), so the lexer must at least
+        // never crash on input a user can type. Deterministic pseudo-random text over
+        // an alphabet chosen for the awkward cases: quotes, backslashes, braces, `v`,
+        // digits, line breaks and multi-byte characters.
+        const ALPHABET: &[&str] = &[
+            "a",
+            "v",
+            "0",
+            "9",
+            "x",
+            "_",
+            "'",
+            "\"",
+            "\\",
+            "{",
+            "}",
+            "u",
+            "#",
+            "\n",
+            "\r",
+            " ",
+            ":",
+            "=",
+            "ñ",
+            "✓",
+            "0x",
+            "end",
+            "12v",
+            "\u{10FFFF}",
+        ];
+        let mut state: u64 = 0x9E3779B97F4A7C15; // any fixed seed; the test is reproducible
+        let mut next = move || {
+            state = state
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            (state >> 33) as usize
+        };
+        for case in 0..2_000 {
+            let len = next() % 40;
+            let mut src = String::new();
+            for _ in 0..len {
+                src.push_str(ALPHABET[next() % ALPHABET.len()]);
+            }
+            let mut d = Diagnostics::new();
+            let tokens = lex(S, &src, &mut d);
+            assert_eq!(
+                tokens.last().map(|t| &t.kind),
+                Some(&TokenKind::Eof),
+                "case {case} ({src:?}) did not end with Eof"
+            );
+            // Progress: every token consumes at least one byte, bar `Eof`.
+            assert!(
+                tokens.len() <= src.len() + 1,
+                "case {case} ({src:?}) produced {} tokens for {} bytes",
+                tokens.len(),
+                src.len()
+            );
+        }
     }
 }

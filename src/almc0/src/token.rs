@@ -103,6 +103,31 @@ pub enum Glyph {
 }
 
 impl Glyph {
+    /// Every glyph, for tests that must hold for all of them rather than a chosen few.
+    pub const ALL: &'static [Glyph] = &[
+        Glyph::Assign,
+        Glyph::Colon,
+        Glyph::ColonColon,
+        Glyph::Equal,
+        Glyph::Tilde,
+        Glyph::Less,
+        Glyph::LessEqual,
+        Glyph::Greater,
+        Glyph::GreaterEqual,
+        Glyph::Plus,
+        Glyph::Minus,
+        Glyph::Star,
+        Glyph::Slash,
+        Glyph::Underscore,
+        Glyph::Dot,
+        Glyph::Comma,
+        Glyph::Semicolon,
+        Glyph::LeftParen,
+        Glyph::RightParen,
+        Glyph::LeftBracket,
+        Glyph::RightBracket,
+    ];
+
     pub const fn text(self) -> &'static str {
         match self {
             Glyph::Assign => ":=",
@@ -145,6 +170,33 @@ pub enum IntValue {
     InRange(i64),
     /// Exactly 2^63. Legal only directly under `_`.
     MinIntMagnitude,
+}
+
+impl IntValue {
+    /// The value, when the literal denotes one on its own.
+    ///
+    /// `None` for `MinIntMagnitude`: 2^63 is not an `int`, and a literal that large is
+    /// legal **only** as the operand of `_` [2]. The parser must therefore use
+    /// `negated` where it handles unary `_`, and report this case as an error
+    /// everywhere else — see the Phase 1 parser item in TODO.md.
+    pub fn value(self) -> Option<i64> {
+        match self {
+            IntValue::InRange(v) => Some(v),
+            IntValue::MinIntMagnitude => None,
+        }
+    }
+
+    /// The value of `_` applied to this literal, which is where the over-max case
+    /// becomes legal: `_9223372036854775808` is the smallest `int`.
+    ///
+    /// `None` when negation itself would overflow, which cannot happen for an in-range
+    /// literal but is checked rather than assumed.
+    pub fn negated(self) -> Option<i64> {
+        match self {
+            IntValue::InRange(v) => v.checked_neg(),
+            IntValue::MinIntMagnitude => Some(i64::MIN),
+        }
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -224,6 +276,17 @@ mod tests {
     }
 
     #[test]
+    fn the_over_max_literal_is_only_a_value_once_negated() {
+        // [2]: 9223372036854775808 is accepted "as the operand of `_`, which gives the
+        // smallest `int`" — and nowhere else.
+        assert_eq!(IntValue::MinIntMagnitude.value(), None);
+        assert_eq!(IntValue::MinIntMagnitude.negated(), Some(i64::MIN));
+        assert_eq!(IntValue::InRange(7).value(), Some(7));
+        assert_eq!(IntValue::InRange(7).negated(), Some(-7));
+        assert_eq!(IntValue::InRange(i64::MAX).negated(), Some(-i64::MAX));
+    }
+
+    #[test]
     fn lookup_is_case_sensitive() {
         assert_eq!(Keyword::lookup("end"), Some(Keyword::End));
         assert_eq!(Keyword::lookup("End"), None);
@@ -231,17 +294,52 @@ mod tests {
     }
 
     #[test]
-    fn there_is_no_not_equal_glyph() {
-        // [2]: "There is no not-equal or not-identical glyph."
-        for g in [
-            Glyph::Assign,
-            Glyph::Equal,
-            Glyph::Tilde,
-            Glyph::Less,
-            Glyph::LessEqual,
-            Glyph::Greater,
-            Glyph::GreaterEqual,
-        ] {
+    fn the_glyph_table_holds_what_the_specification_lists() {
+        // Read the glyph cells out of [2]'s own table rather than comparing the table in
+        // this file against itself. [2] also lists `is`, `div`, `mod`, `#`, `v` and `\`
+        // in that table: those are two keywords, a third keyword, the comment character,
+        // part of a fixed literal and the escape introducer — not glyphs — so they are
+        // named here as exclusions rather than quietly skipped.
+        let spec = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../documentation/language_reference.md"),
+        )
+        .expect("the specification must be readable");
+        let section = spec
+            .split("\n## 2. Lexical structure")
+            .nth(1)
+            .and_then(|s| s.split("\n## 3.").next())
+            .expect("section 2 of the specification");
+
+        let not_glyphs = ["is", "div", "mod", "#", "v", "\\", "div` `mod"];
+        let mut checked = 0;
+        for line in section.lines() {
+            let Some(rest) = line.strip_prefix("| `") else {
+                continue;
+            };
+            let Some((cell, _)) = rest.split_once("` |") else {
+                continue;
+            };
+            if not_glyphs.contains(&cell) {
+                continue;
+            }
+            // A cell may list several glyphs: "`<` `<=` `>` `>=`".
+            for part in cell.split("` `") {
+                assert!(
+                    Glyph::ALL.iter().any(|g| g.text() == part),
+                    "[2] lists the glyph `{part}`, which the table in token.rs lacks"
+                );
+                checked += 1;
+            }
+        }
+        assert!(
+            checked >= 15,
+            "only {checked} glyph cells found; did the table move?"
+        );
+
+        // And nothing in our table pretends to be a negation: [2] says there is no
+        // not-equal and no not-identical glyph.
+        for g in Glyph::ALL {
             assert!(
                 !g.text().contains('!'),
                 "{} looks like a negation",
