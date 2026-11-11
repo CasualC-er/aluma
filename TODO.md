@@ -40,13 +40,13 @@ parallel with the phase above it.
 
 ## Phase 1 — Lexer and parser (`almc0`)
 
-- [ ] UTF-8 source reader; ASCII-only identifiers; byte/char/line/column spans
-- [ ] Keyword table (the 52 reserved words, `also` through `while`, taken from the [2] list itself, not retyped) [2]; `std` not declarable
-- [ ] `#` comments to end of line, not inside literals
-- [ ] Integer literals, `0x` hex, the over-max rule and the under-`_` exception in **both** spellings, `9223372036854775808` and `0x8000000000000000` [2]
-- [ ] `fixed` literals `12v50`; scale = digits after `v`; decimal digits only — `0xFFv10` is an error, per amendment A-001 ([2] prose over the [10] grammar)
-- [ ] Char and string literals; escapes `\n \t \r \0 \\ \' \" \u{h}`; reject other escapes, raw line breaks, multi-code-point char literals
-- [ ] Glyph table incl. `:=` `:` `::` `~` `_` `/`, and the absence of a not-equal glyph [2]
+- [x] UTF-8 source reader; ASCII-only identifiers; byte/char/line/column spans
+- [x] Keyword table (the 52 reserved words, `also` through `while`, taken from the [2] list itself, not retyped) [2]; `std` not declarable
+- [x] `#` comments to end of line, not inside literals
+- [x] Integer literals, `0x` hex, the over-max rule and the under-`_` exception in **both** spellings, `9223372036854775808` and `0x8000000000000000` [2]
+- [x] `fixed` literals `12v50`; scale = digits after `v`; decimal digits only — `0xFFv10` is an error, per amendment A-001 ([2] prose over the [10] grammar)
+- [x] Char and string literals; escapes `\n \t \r \0 \\ \' \" \u{h}`; reject other escapes, raw line breaks, multi-code-point char literals
+- [x] Glyph table incl. `:=` `:` `::` `~` `_` `/`, and the absence of a not-equal glyph [2]
 - [ ] Recursive-descent parser for all of [10], one token of lookahead
 - [ ] `generic` lines first; `import` lines next; instance imports among declarations [4.4]
 - [ ] Declarations: `const`, `enum`, `type`, `exception`, `share`, `proc`, with `also` / `private` prefixes
