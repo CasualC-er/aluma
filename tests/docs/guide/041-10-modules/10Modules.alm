@@ -1,17 +1,13 @@
-import IntList;
+proc max(a: String, b: String): String
+begin
+  if stringcmp(a, b) >= 0 then
+    return a;
+  end;
+  return b;
+end;
 
 proc start(): int
-  var l: IntList::List;
-  var x: int;
 begin
-  IntList::push(l, 1);
-  IntList::push(l, 2);
-  x := IntList::pop(l);
-  try
-    void IntList::pop(l);
-    void IntList::pop(l);
-  catch IntList::Empty do
-    writeLine("empty");
-  end;
-  return x;
+  writeLine(max("apple", "pear"));
+  return std::max(3, 9);
 end;

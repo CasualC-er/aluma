@@ -1,8 +1,5 @@
 # name: 11.3 Messages and replies
-# source: documentation/guide.md:974
+# source: documentation/guide.md:1016
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
-mode = run
+mode = compile-ok
 main = 113MessagesAndReplies.alm
-exit = 0
-
-[stdout] ignore

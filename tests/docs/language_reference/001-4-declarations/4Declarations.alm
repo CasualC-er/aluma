@@ -1,5 +1,0 @@
-const Size is 100;
-enum  Get, Put, Delete;
-type  Node is record key: int; left: ref Node; right: ref Node; end;
-exception NotFound;
-proc  name(params): result block;

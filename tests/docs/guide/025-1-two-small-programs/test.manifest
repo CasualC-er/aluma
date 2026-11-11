@@ -1,8 +1,8 @@
-# name: Shared data
-# source: documentation/language_reference.md:1254
+# name: 1. Two small programs
+# source: documentation/guide.md:9
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
 mode = run
-main = SharedData.alm
+main = 1TwoSmallPrograms.alm
 exit = 0
 
 [stdout] ignore

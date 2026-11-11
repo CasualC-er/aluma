@@ -1,5 +1,5 @@
-# name: 8.1 Parameters
-# source: documentation/guide.md:467
+# name: 10.1 Generic modules
+# source: documentation/guide.md:754
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
 mode = compile-ok
-main = 81Parameters.alm
+main = Stack.alm

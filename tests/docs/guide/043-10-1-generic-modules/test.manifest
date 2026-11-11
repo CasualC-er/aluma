@@ -1,5 +1,5 @@
 # name: 10.1 Generic modules
-# source: documentation/guide.md:754
+# source: documentation/guide.md:799
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
 mode = compile-ok
-main = Stack.alm
+main = Lookup.alm

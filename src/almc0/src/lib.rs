@@ -2,5 +2,7 @@
 //!
 //! Bracketed section numbers point into `documentation/language_reference.md`.
 
+pub mod ast;
 pub mod lex;
+pub mod parse;
 pub mod token;

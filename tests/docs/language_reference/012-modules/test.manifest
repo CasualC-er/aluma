@@ -1,5 +1,8 @@
 # name: Modules
-# source: documentation/language_reference.md:1161
+# source: documentation/language_reference.md:1204
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
-mode = compile-ok
-main = IntList.alm
+mode = run
+main = Modules.alm
+exit = 0
+
+[stdout] ignore

@@ -1,5 +1,5 @@
-# name: 4. Declarations
-# source: documentation/language_reference.md:114
+# name: 7.1 Recursive groups
+# source: documentation/guide.md:401
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
 mode = compile-ok
-main = 4Declarations.alm
+main = 71RecursiveGroups.alm

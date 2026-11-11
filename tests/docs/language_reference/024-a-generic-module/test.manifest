@@ -1,5 +1,5 @@
 # name: A generic module
-# source: documentation/language_reference.md:1561
+# source: documentation/language_reference.md:1580
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
 mode = run
 main = AGenericModule.alm

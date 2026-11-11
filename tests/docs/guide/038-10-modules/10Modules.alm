@@ -1,0 +1,8 @@
+import IntList;
+
+proc start(): int
+  var l: IntList::List;
+begin
+  IntList::push(l, 1);
+  return IntList::pop(l);
+end;

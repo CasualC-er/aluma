@@ -1,38 +1,17 @@
-exception Empty;
+import IntList;
 
-type Cell is record
-  value: int;
-  link: ref Cell;
-end;
-
-type List is record
-  private head: ref Cell;
-  private size: int;
-end;
-
-private proc drop(l: List)
-begin
-  l.head := l.head.link;
-  l.size := l.size - 1;
-end;
-
-proc push(l: List, x: int)
-  var c: ref Cell;
-begin
-  c := new(Cell);
-  c.value := x;
-  c.link := l.head;
-  l.head := c;
-  l.size := l.size + 1;
-end;
-
-proc pop(l: List): int
+proc start(): int
+  var l: IntList::List;
   var x: int;
 begin
-  if l.head ~ nil then
-    raise Empty;
+  IntList::push(l, 1);
+  IntList::push(l, 2);
+  x := IntList::pop(l);
+  try
+    void IntList::pop(l);
+    void IntList::pop(l);
+  catch IntList::Empty do
+    writeLine("empty");
   end;
-  x := l.head.value;
-  drop(l);
   return x;
 end;

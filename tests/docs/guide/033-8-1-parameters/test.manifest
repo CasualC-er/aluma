@@ -1,0 +1,5 @@
+# name: 8.1 Parameters
+# source: documentation/guide.md:453
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = compile-ok
+main = 81Parameters.alm

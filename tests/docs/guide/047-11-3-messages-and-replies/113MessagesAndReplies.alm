@@ -1,35 +1,13 @@
-type Result is record
+enum Get, Put;
+
+type Reply is record
+  found: bool;
   value: int;
 end;
 
-type Job is record
+type Request is record
+  kind: int;
+  key: int;
   value: int;
-  back: reply of Result;
-end;
-
-proc doubler(queue: inbox of Job)
-  var job: ref Job;
-  var out: ref Result;
-begin
-  while true do
-    await(queue, job);
-    out := new(Result);
-    out.value := job.value * 2;
-    answer(job.back, out);
-  end;
-end;
-
-proc start(queue: inbox of Result): int
-  var worker: task of Job;
-  var job: ref Job;
-  var result: ref Result;
-begin
-  worker := spawn(doubler);
-  job := new(Job);
-  job.value := 21;
-  job.back := replyTo(queue);
-  send(worker, job);
-  await(queue, result);
-  writeLine(intStr(result.value));
-  return 0;
+  back: reply of Reply;
 end;

@@ -1,8 +1,0 @@
-type Tree is record
-  label: int;
-  kids: ref Forest;
-end;
-
-also type Forest is record
-  trees: ref array of ref Tree;
-end;

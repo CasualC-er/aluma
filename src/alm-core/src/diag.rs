@@ -77,9 +77,17 @@ impl Diagnostic {
 ///
 /// Order is the order they were reported in, and that order is part of the
 /// conformance contract, so nothing here sorts or deduplicates.
+///
+/// The list is **capped**. A compiler that reports a thousand errors is not helping
+/// anyone, and a bug in error recovery — a loop that reports without consuming input —
+/// otherwise grows this vector until the machine runs out of memory. That is not
+/// hypothetical: it happened, and it took the editor down with it. The cap turns that
+/// class of bug into a bounded, visible failure instead of an OOM kill.
 #[derive(Clone, Default, Debug)]
 pub struct Diagnostics {
     items: Vec<Diagnostic>,
+    /// How many were dropped after the cap.
+    dropped: usize,
 }
 
 impl Diagnostics {
@@ -87,8 +95,26 @@ impl Diagnostics {
         Diagnostics::default()
     }
 
+    /// The most diagnostics one compilation reports.
+    pub const LIMIT: usize = 200;
+
     pub fn push(&mut self, d: Diagnostic) {
+        if self.items.len() >= Diagnostics::LIMIT {
+            self.dropped += 1;
+            return;
+        }
         self.items.push(d);
+    }
+
+    /// How many diagnostics were dropped because the cap was reached. A driver should
+    /// say so rather than let the list look complete.
+    pub fn dropped(&self) -> usize {
+        self.dropped
+    }
+
+    /// True once nothing more will be recorded.
+    pub fn is_full(&self) -> bool {
+        self.items.len() >= Diagnostics::LIMIT
     }
 
     pub fn error(&mut self, span: Span, message: impl Into<String>) {
@@ -124,6 +150,25 @@ mod tests {
         assert_eq!(
             d.render("F.alm", src),
             "F.alm:2:3: error: `x` is not declared"
+        );
+    }
+
+    #[test]
+    fn the_list_is_capped_so_a_recovery_bug_cannot_eat_the_machine() {
+        let s = SourceId(0);
+        let mut ds = Diagnostics::new();
+        for i in 0..(Diagnostics::LIMIT + 50) {
+            ds.error(Span::new(s, 0, 1), format!("error {i}"));
+        }
+        assert_eq!(ds.len(), Diagnostics::LIMIT);
+        assert_eq!(ds.dropped(), 50);
+        assert!(ds.is_full());
+        // The ones kept are the first ones, in order: the earliest errors are the ones
+        // worth seeing, since later ones are usually consequences.
+        assert_eq!(ds.items()[0].message, "error 0");
+        assert_eq!(
+            ds.items()[Diagnostics::LIMIT - 1].message,
+            format!("error {}", Diagnostics::LIMIT - 1)
         );
     }
 

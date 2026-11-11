@@ -1,7 +1,8 @@
-proc swap(a: int, b: int)
-  var t: int;
+proc push(head: ref Cell, x: int)
+  var c: ref Cell;
 begin
-  t := a;
-  a := b;
-  b := t;
+  c := new(Cell);
+  c.value := x;
+  c.link := head;
+  head := c;
 end;

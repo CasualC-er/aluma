@@ -167,7 +167,25 @@ def is_output_block(block: Block) -> bool:
     return ";" not in block.body
 
 
+# Blocks that look like programs but are not, listed by (document, line) with the
+# reason. A mechanical classifier cannot tell a schema from a program: both are
+# declarations, and only a reader knows that `params`, `result` and `block` in
+# "proc name(params): result block;" are placeholders standing for the shape of a
+# declaration. One hand-listed exception with a stated reason is more honest than a
+# heuristic that guesses, and the inventory shows it as skipped either way.
+SCHEMATIC = {
+    ("documentation/language_reference.md", 114): (
+        "a schema of the declaration forms, not a program: `params`, `result` and "
+        "`block` are placeholders"
+    ),
+}
+
+
 def classify(block: Block) -> None:
+    schematic = SCHEMATIC.get((block.doc, block.line))
+    if schematic:
+        block.disposition, block.reason = "skipped", schematic
+        return
     if block.tag in ("ebnf", "keywords"):
         block.disposition, block.reason = "skipped", f"`{block.tag}` is reference material"
     elif block.tag == "text":

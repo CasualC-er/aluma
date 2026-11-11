@@ -1,8 +1,8 @@
-# name: 10. Modules
-# source: documentation/guide.md:722
+# name: 11.3 Messages and replies
+# source: documentation/guide.md:974
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
 mode = run
-main = 10Modules.alm
+main = 113MessagesAndReplies.alm
 exit = 0
 
 [stdout] ignore

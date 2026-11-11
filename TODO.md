@@ -47,16 +47,16 @@ parallel with the phase above it.
 - [x] `fixed` literals `12v50`; scale = digits after `v`; decimal digits only — `0xFFv10` is an error, per amendment A-001 ([2] prose over the [10] grammar)
 - [x] Char and string literals; escapes `\n \t \r \0 \\ \' \" \u{h}`; reject other escapes, raw line breaks, multi-code-point char literals
 - [x] Glyph table incl. `:=` `:` `::` `~` `_` `/`, and the absence of a not-equal glyph [2]
-- [ ] Recursive-descent parser for all of [10], one token of lookahead
-- [ ] Parser: the over-max integer literal is legal **only** directly under `_` — use `IntValue::negated` there, and report `9223372036854775808` (or `0x8000000000000000`) as an error in every other position [2]; the lexer carries it as `IntValue::MinIntMagnitude` because the rule is about the parse tree, not the token
-- [ ] `generic` lines first; `import` lines next; instance imports among declarations [4.4]
-- [ ] Declarations: `const`, `enum`, `type`, `exception`, `share`, `proc`, with `also` / `private` prefixes
-- [ ] Types: predefined, `fixed(p,s)`, `array [n] of`, `record` with `private` fields, `ref`, `inbox`, `mailbox`, `reply`, `view`, `publisher`, `task [of]`
-- [ ] Statements: assignment (+ `rounded`), call, `void` call, `if/elsif/else`, `while`, `exit`, `next`, `defer`, `return`, `raise`, `try/catch`
-- [ ] Expression precedence levels 1–8, non-associative relations, `not` looser than comparisons [6]
-- [ ] Selectors on call results [6]
-- [ ] Diagnostics with spans, and recovery good enough to report several errors in one run
-- [ ] Parser tests: round-trip every doc example; a negative test per syntax error
+- [x] Recursive-descent parser for all of [10], one token of lookahead
+- [x] Parser: the over-max integer literal is legal **only** directly under `_` — use `IntValue::negated` there, and report `9223372036854775808` (or `0x8000000000000000`) as an error in every other position [2]; the lexer carries it as `IntValue::MinIntMagnitude` because the rule is about the parse tree, not the token
+- [x] `generic` lines first; `import` lines next; instance imports among declarations [4.4]
+- [x] Declarations: `const`, `enum`, `type`, `exception`, `share`, `proc`, with `also` / `private` prefixes
+- [x] Types: predefined, `fixed(p,s)`, `array [n] of`, `record` with `private` fields, `ref`, `inbox`, `mailbox`, `reply`, `view`, `publisher`, `task [of]`
+- [x] Statements: assignment (+ `rounded`), call, `void` call, `if/elsif/else`, `while`, `exit`, `next`, `defer`, `return`, `raise`, `try/catch`
+- [x] Expression precedence levels 1–8, non-associative relations, `not` looser than comparisons [6]
+- [x] Selectors on call results [6]
+- [x] Diagnostics with spans, and recovery good enough to report several errors in one run; every recovery loop carries a progress guard, and `Diagnostics` is capped, so a recovery bug cannot grow without bound
+- [x] Parser tests: every doc example parses clean, the AST dump is a function of the source alone (for the Phase 10 differential), and there is a negative test per shape of syntax error — a *source* round-trip waits for the Phase 12 formatter
 
 ## Phase 2 — Semantics (`almc0`)
 
