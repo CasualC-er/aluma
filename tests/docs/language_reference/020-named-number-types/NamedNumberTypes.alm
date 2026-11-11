@@ -1,0 +1,15 @@
+type Dollars is fixed(12,2);
+type Euros is fixed(12,2);
+
+proc start(): int
+  var price: Dollars;
+  var tax: Dollars;
+  var total: Dollars;
+  var fare: Euros;
+begin
+  price := 19v99;
+  tax := rounded price * 0v19;
+  total := price + tax;
+  fare := 5v00;
+  return truncate(total);
+end;

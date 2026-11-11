@@ -1,0 +1,5 @@
+# name: 7.1 Recursive groups
+# source: documentation/guide.md:419
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = compile-ok
+main = 71RecursiveGroups.alm

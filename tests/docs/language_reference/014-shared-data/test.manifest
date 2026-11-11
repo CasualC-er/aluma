@@ -1,0 +1,5 @@
+# name: Shared data
+# source: documentation/language_reference.md:1230
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = compile-ok
+main = Tables.alm

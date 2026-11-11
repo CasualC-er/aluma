@@ -1,0 +1,39 @@
+type String is ref array of char;
+
+proc concat(a: String, b: String): String
+  var r: String;
+  var i: int;
+begin
+  r := new(array of char, len(a) + len(b));
+  i := 0;
+  while i < len(a) do
+    r[i] := a[i];
+    i := i + 1;
+  end;
+  i := 0;
+  while i < len(b) do
+    r[len(a) + i] := b[i];
+    i := i + 1;
+  end;
+  return r;
+end;
+
+proc stringcmp(a: String, b: String): int
+  var i: int;
+begin
+  i := 0;
+  while (i < len(a)) and (i < len(b)) do
+    if a[i] < b[i] then
+      return _1;
+    elsif b[i] < a[i] then
+      return 1;
+    end;
+    i := i + 1;
+  end;
+  if len(a) < len(b) then
+    return _1;
+  elsif len(b) < len(a) then
+    return 1;
+  end;
+  return 0;
+end;

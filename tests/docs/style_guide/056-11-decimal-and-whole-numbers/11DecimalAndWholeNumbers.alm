@@ -1,0 +1,8 @@
+type Dollars is fixed(12,2);
+
+# Splits an amount into three parts. The last part is what is left.
+proc split3(amount: Dollars, first: Dollars, last: Dollars)
+begin
+  first := divide(amount, 3, 2, RoundDown);
+  last := amount - first - first;
+end;

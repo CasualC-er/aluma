@@ -1,0 +1,28 @@
+enum Add, Read;
+
+type Answer is record
+  total: int;
+end;
+
+type Request is record
+  kind: int;
+  amount: int;
+  back: reply of Answer;
+end;
+
+proc counter(queue: inbox of Request)
+  var request: ref Request;
+  var result: ref Answer;
+  var total: int;
+begin
+  while true do
+    await(queue, request);
+    if request.kind = Add then
+      total := total + request.amount;
+    elsif request.kind = Read then
+      result := new(Answer);
+      result.total := total;
+      answer(request.back, result);
+    end;
+  end;
+end;

@@ -1,0 +1,8 @@
+# name: Sockets: an echo server
+# source: documentation/language_reference.md:1122
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = run
+main = SocketsAnEchoServer.alm
+exit = 0
+
+[stdout] ignore

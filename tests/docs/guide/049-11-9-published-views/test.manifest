@@ -1,0 +1,8 @@
+# name: 11.9 Published views
+# source: documentation/guide.md:1195
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = run
+main = 119PublishedViews.alm
+exit = 0
+
+[stdout] ignore

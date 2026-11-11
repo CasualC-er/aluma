@@ -1,0 +1,30 @@
+import Net;
+
+proc echo(input: File, output: File)
+  var line: String;
+begin
+  defer close(input);
+  defer close(output);
+  try
+    line := readLine(input);
+    while not (line ~ nil) do
+      writeLine(output, line);
+      line := readLine(input);
+    end;
+  catch Net::ConnectionReset, IOError do
+  end;
+end;
+
+proc start(): int
+  var listener: Net::Listener;
+  var input: File;
+  var output: File;
+begin
+  listener := Net::listen(8080);
+  defer Net::close(listener);
+  while true do
+    Net::accept(listener, input, output);
+    disown(spawn(echo, input, output));
+  end;
+  return 0;
+end;

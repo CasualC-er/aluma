@@ -1,0 +1,5 @@
+# name: Binary search in a balanced tree
+# source: documentation/language_reference.md:832
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = compile-ok
+main = BinarySearchInABalancedT.alm

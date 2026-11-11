@@ -1,0 +1,8 @@
+# name: Explicit rounding and units
+# source: documentation/language_reference.md:1307
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = run
+main = ExplicitRoundingAndUnits.alm
+exit = 0
+
+[stdout] ignore

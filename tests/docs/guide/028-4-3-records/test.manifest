@@ -1,0 +1,5 @@
+# name: 4.3 Records
+# source: documentation/guide.md:135
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = compile-ok
+main = 43Records.alm

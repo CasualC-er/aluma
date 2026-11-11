@@ -1,0 +1,7 @@
+proc swap(a: int, b: int)
+  var t: int;
+begin
+  t := a;
+  a := b;
+  b := t;
+end;

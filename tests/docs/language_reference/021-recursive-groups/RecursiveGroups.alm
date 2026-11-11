@@ -1,0 +1,58 @@
+type Tree is record
+  label: int;
+  kids: ref Forest;
+end;
+
+also type Forest is record
+  trees: ref array of ref Tree;
+end;
+
+proc countNodes(t: ref Tree): int
+  var total: int;
+  var i: int;
+begin
+  if t ~ nil then
+    return 0;
+  end;
+  total := 1;
+  if not t.kids ~ nil then
+    i := 0;
+    while i < len(t.kids.trees) do
+      total := total + countNodes(t.kids.trees[i]);
+      i := i + 1;
+    end;
+  end;
+  return total;
+end;
+
+proc isEven(n: int): bool
+begin
+  if n = 0 then
+    return true;
+  end;
+  return isOdd(n - 1);
+end;
+
+also proc isOdd(n: int): bool
+begin
+  if n = 0 then
+    return false;
+  end;
+  return isEven(n - 1);
+end;
+
+proc start(): int
+  var root: ref Tree;
+  var forest: ref Forest;
+begin
+  root := new(Tree);
+  forest := new(Forest);
+  forest.trees := new(array of ref Tree, 2);
+  forest.trees[0] := new(Tree);
+  forest.trees[1] := new(Tree);
+  root.kids := forest;
+  if isEven(countNodes(root)) then
+    return 0;
+  end;
+  return 1;
+end;

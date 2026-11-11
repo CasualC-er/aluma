@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  # A wrong answer is the only signal this project gets (ADR-013), so a warning is
+  # treated as an error rather than scrolled past.
+  RUSTFLAGS: -D warnings
+
+jobs:
+  # The toolchain version comes from rust-toolchain.toml (ADR-002); nothing here pins
+  # it a second time, so there is one place to change it.
+  check:
+    name: fmt, clippy, test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets
+      - run: cargo test --workspace
+
+  # ADR-001 pins LLVM through clang, and plan §7 requires testing against two versions,
+  # because textual `.ll` is version-sensitive at the edges. The matrix exists from the
+  # start so that a version bump is a one-line diff with a visible result; the build
+  # steps are added in Phase 3b, when there is IR to emit.
+  llvm:
+    name: llvm ${{ matrix.llvm }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        llvm: [21, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang ${{ matrix.llvm }}
+        run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository -y "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-${{ matrix.llvm }} main"
+          sudo apt-get install -y clang-${{ matrix.llvm }} lld-${{ matrix.llvm }}
+      - run: clang-${{ matrix.llvm }} --version
+      # Phase 3b: build the toolchain, compile the corpus, and run the `-O0` vs `-O2`
+      # differential (ADR-013.2) over the programs with no outside events.
+
+  # The conformance suite is the primary check (ADR-013.4), so its state is reported on
+  # every run even while most of it is `pending`: a pending count that stops falling is
+  # a schedule signal, not a passing build.
+  conformance:
+    name: conformance corpus
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p almtest
+      # Phase 0, remaining: run the extracted doc corpus and print pass/fail/pending.
+      # Phase 8: fail the job if the conformance matrix has an unmapped spec rule.
+
+  # Phase 11 (M8): reproduce the whole bootstrap from a clean checkout —
+  # almc0 → almc.1.ir → almc.2.ir → almc.3.ir, asserting almc.2.ir == almc.3.ir.
+  # Added when Phase 10 lands; listed here so the milestone has a home.

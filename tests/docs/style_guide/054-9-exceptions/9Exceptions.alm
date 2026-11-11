@@ -1,0 +1,18 @@
+exception TooBig;
+
+proc check(n: int)
+begin
+  if n > 100 then
+    raise TooBig;
+  end;
+end;
+
+proc start(): int
+begin
+  try
+    check(500);
+  catch TooBig, NilReference do
+    writeLine("rejected");
+  end;
+  return 0;
+end;

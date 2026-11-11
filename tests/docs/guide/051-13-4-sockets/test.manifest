@@ -1,0 +1,13 @@
+# name: 13.4 Sockets
+# source: documentation/guide.md:1379
+# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
+mode = run
+main = 134Sockets.alm
+exit = 0
+
+[stdout]
+start ─ owns the listener; made the view; moved the publisher into room
+ ├─ room         publisher: appends lines to the log and publishes once per round
+ ├─ session #1   link to room, the view, the input half
+ │    └─ writer  the view, the output half
+ ├─ session #2   ...

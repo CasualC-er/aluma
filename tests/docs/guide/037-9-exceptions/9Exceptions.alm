@@ -1,0 +1,20 @@
+exception TooBig;
+
+proc check(n: int)
+begin
+  if n > 100 then
+    raise TooBig;
+  end;
+end;
+
+proc start(): int
+begin
+  try
+    check(500);
+  catch TooBig do
+    writeLine("too big");
+  catch do
+    writeLine("something else");
+  end;
+  return 0;
+end;

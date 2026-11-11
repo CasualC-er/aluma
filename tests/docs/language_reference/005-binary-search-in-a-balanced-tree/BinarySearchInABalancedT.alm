@@ -1,0 +1,36 @@
+type Node is record
+  key: int;
+  left: ref Node;
+  right: ref Node;
+end;
+
+proc find(root: ref Node, k: int): ref Node
+  var cur: ref Node;
+begin
+  cur := root;
+  while not (cur ~ nil) do
+    if k = cur.key then
+      return cur;
+    elsif k < cur.key then
+      cur := cur.left;
+    else
+      cur := cur.right;
+    end;
+  end;
+  return nil;
+end;
+
+proc build(keys: ref array of int, lo: int, hi: int): ref Node
+  var n: ref Node;
+  var mid: int;
+begin
+  if hi < lo then
+    return nil;
+  end;
+  mid := (lo + hi) div 2;
+  n := new(Node);
+  n.key := keys[mid];
+  n.left := build(keys, lo, mid - 1);
+  n.right := build(keys, mid + 1, hi);
+  return n;
+end;
