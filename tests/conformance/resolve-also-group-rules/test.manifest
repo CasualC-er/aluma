@@ -1,0 +1,4 @@
+# name: where `also` may and may not appear
+# source: documentation/language_reference.md:4.3
+mode = compile-error
+main = Groups.alm

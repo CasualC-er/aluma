@@ -1,0 +1,9 @@
+# [4.1]: "Using a private name from another module is a compile error."
+import Dep;
+
+proc start()
+  var n: int;
+begin
+  n := Dep::visible();
+  n := Dep::hidden();   #!error: is private to `Dep`
+end;

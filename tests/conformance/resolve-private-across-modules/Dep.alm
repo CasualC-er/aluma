@@ -1,0 +1,9 @@
+proc visible(): int
+begin
+  return 1;
+end;
+
+private proc hidden(): int
+begin
+  return 2;
+end;

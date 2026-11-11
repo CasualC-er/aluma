@@ -1,0 +1,4 @@
+# name: the library names the language relies on cannot be hidden
+# source: documentation/language_reference.md:4.1
+mode = compile-error
+main = Unhidable.alm

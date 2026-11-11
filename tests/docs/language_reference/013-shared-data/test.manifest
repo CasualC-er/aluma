@@ -1,5 +1,8 @@
 # name: Shared data
-# source: documentation/language_reference.md:1230
+# source: documentation/language_reference.md:1254
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
-mode = compile-ok
-main = Tables.alm
+mode = run
+main = SharedData.alm
+exit = 0
+
+[stdout] ignore

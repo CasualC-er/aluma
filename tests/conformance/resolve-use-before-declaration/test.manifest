@@ -1,0 +1,4 @@
+# name: a use before the declaration that hides a library name
+# source: documentation/language_reference.md:4.1
+mode = compile-error
+main = Hiding.alm

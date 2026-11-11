@@ -1,0 +1,12 @@
+# [4.1]: "The names `len` and the task, handle and view operations of section 8
+# (`spawn`, `send`, ...), which the language itself relies on, cannot be hidden. A
+# parameter or a local variable ... cannot hide the names listed above either."
+proc len(a: int): int    #!error: cannot be hidden
+begin
+  return a;
+end;
+
+proc start(send: int)    #!error: a parameter cannot hide it
+  var await: int;        #!error: a local variable cannot hide it
+begin
+end;

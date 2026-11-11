@@ -1,8 +1,0 @@
-# name: 10. Modules
-# source: documentation/guide.md:698
-# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
-mode = run
-main = Modules.alm
-exit = 0
-
-[stdout] ignore

@@ -1,0 +1,9 @@
+# [4.1]: "Imports are not transitive: if `A` imports `B`, a module that imports `A`
+# must also import `B` to use `B`'s names."
+import Middle;
+
+proc start()
+  var n: int;
+begin
+  n := Leaf::value();   #!error: imports are not transitive
+end;

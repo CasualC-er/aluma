@@ -1,38 +1,13 @@
-exception Empty;
-
-type Cell is record
-  value: int;
-  link: ref Cell;
-end;
-
-type List is record
-  private head: ref Cell;
-  private size: int;
-end;
-
-private proc drop(l: List)
+proc max(a: String, b: String): String
 begin
-  l.head := l.head.link;
-  l.size := l.size - 1;
-end;
-
-proc push(l: List, x: int)
-  var c: ref Cell;
-begin
-  c := new(Cell);
-  c.value := x;
-  c.link := l.head;
-  l.head := c;
-  l.size := l.size + 1;
-end;
-
-proc pop(l: List): int
-  var x: int;
-begin
-  if l.head ~ nil then
-    raise Empty;
+  if stringcmp(a, b) >= 0 then
+    return a;
   end;
-  x := l.head.value;
-  drop(l);
-  return x;
+  return b;
+end;
+
+proc start(): int
+begin
+  writeLine(max("apple", "pear"));
+  return std::max(3, 9);
 end;

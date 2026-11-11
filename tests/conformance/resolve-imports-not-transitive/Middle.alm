@@ -1,0 +1,5 @@
+import Leaf;
+
+proc go()
+begin
+end;

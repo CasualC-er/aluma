@@ -1,0 +1,13 @@
+# [4.3]: "`also` cannot come first in a file, after any other kind of declaration, or
+# after a declaration of the other kind." A legal group comes first, so that the test
+# pins what is allowed as well as what is not.
+type Tree is record label: int; kids: ref Forest; end;
+also type Forest is record trees: ref array of ref Tree; end;
+
+const Size is 10;
+also type Bad is int;        #!error: only types and procedures form groups
+
+type Good is int;
+also proc f()                #!error: all types or all procedures
+begin
+end;

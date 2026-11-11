@@ -1,0 +1,12 @@
+import Numbers is Stack(int), Ages is Lookup(String, int, stringEqual);
+
+proc start(): int
+  var s: Numbers::Stack;
+  var ages: Ages::Table;
+begin
+  Numbers::push(s, 4);
+  Numbers::push(s, 38);
+  Ages::put(ages, "ann", 31);
+  Ages::put(ages, "ann", 32);
+  return Numbers::pop(s) + Numbers::pop(s) + Ages::get(ages, "ann") - 32;
+end;

@@ -1,0 +1,16 @@
+# [4.1]: "A declaration at the top level of a module hides a library name of the same
+# spelling in that module, wherever in the module it is used. A use of the name before
+# its declaration is an error, not a use of the library name."
+#
+# Without that rule the call below would quietly mean the library's `intStr`, and the
+# program would behave differently depending on where the declaration sits.
+proc start()
+  var s: String;
+begin
+  s := intStr(1);   #!error: is used before it is declared
+end;
+
+proc intStr(n: int): String
+begin
+  return "no";
+end;

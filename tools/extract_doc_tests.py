@@ -207,23 +207,35 @@ def is_output_block(block: Block) -> bool:
 
 
 # Blocks that look like programs but are not, listed by (document, line) with the
-# reason. A mechanical classifier cannot tell a schema from a program: both are
+# reason. A mechanical classifier cannot tell these from a program: all of them are
 # declarations, and only a reader knows that `params`, `result` and `block` in
-# "proc name(params): result block;" are placeholders standing for the shape of a
-# declaration. One hand-listed exception with a stated reason is more honest than a
-# heuristic that guesses, and the inventory shows it as skipped either way.
-SCHEMATIC = {
+# "proc name(params): result block;" are placeholders, or that a snippet's `Cell` is
+# declared in the prose around it rather than in the block. One hand-listed exception
+# with a stated reason is more honest than a heuristic that guesses, and the inventory
+# shows it as skipped either way.
+#
+# Each of these was found by the compiler rejecting it, which is the harness working:
+# a fragment that cannot compile is not a conformance test, whatever it looks like.
+EXCLUDED = {
     ("documentation/language_reference.md", 114): (
         "a schema of the declaration forms, not a program: `params`, `result` and "
         "`block` are placeholders"
+    ),
+    ("documentation/language_reference.md", 145): (
+        "a fragment: the `share` line calls `squares`, which the prose declares, not "
+        "the block"
+    ),
+    ("documentation/guide.md", 467): (
+        "a fragment: `push` takes a `ref Cell`, and `Cell` is declared in the prose "
+        "around it, not in the block"
     ),
 }
 
 
 def classify(block: Block) -> None:
-    schematic = SCHEMATIC.get((block.doc, block.line))
-    if schematic:
-        block.disposition, block.reason = "skipped", schematic
+    excluded = EXCLUDED.get((block.doc, block.line))
+    if excluded:
+        block.disposition, block.reason = "skipped", excluded
         return
     if block.tag in ("ebnf", "keywords"):
         block.disposition, block.reason = "skipped", f"`{block.tag}` is reference material"

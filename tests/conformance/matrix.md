@@ -97,12 +97,21 @@ enumerate those, and rows are added here as each is implemented.
 | a module that is not on the path | `load.rs::a_missing_module_names_no_directory`, `tests/conformance/load-missing-module` | tested |
 | only the main module may declare `start` | `load.rs::only_the_main_module_may_declare_start`, `tests/conformance/load-start-outside-main` | tested |
 | the main module must declare `start`, in one of the four forms [9.1] | — | todo |
-| imports are not transitive | — | todo |
-| one flat namespace per module; an imported module's name occupies it | — | todo |
-| `std` is imported automatically; `std::name` always reaches the library | — | todo |
-| a top-level declaration hides a library name; the unhidable list | — | todo |
-| `private` across modules, including private record fields | — | todo |
-| qualification has one level only: no `A::B::c` | — | todo |
+| imports are not transitive | `resolve.rs::imports_are_not_transitive`, `tests/conformance/resolve-imports-not-transitive` | tested |
+| one flat namespace per module | `resolve.rs::a_module_has_one_namespace` | tested |
+| an imported module's name occupies the namespace | `resolve.rs::an_imported_module_name_occupies_the_namespace` | tested |
+| two modules may declare the same name | `resolve.rs::two_modules_may_declare_the_same_name` | tested |
+| `std` is imported automatically, unqualified or qualified | `resolve.rs::the_library_is_in_scope_unqualified_and_qualified` | tested |
+| a top-level declaration hides a library name; `std::name` still reaches it | `resolve.rs::a_declaration_hides_a_library_name_but_std_still_reaches_it` | tested |
+| a use before the hiding declaration is an error, not the library name | `resolve.rs::using_a_hidden_library_name_before_its_declaration_is_an_error`, `tests/conformance/resolve-use-before-declaration` | tested |
+| the unhidable names, for declarations, parameters and locals | `resolve.rs::an_unhidable_library_name_cannot_be_declared_or_shadowed`, `library.rs::the_unhidable_list_is_the_one_in_the_spec`, `tests/conformance/resolve-unhidable-library-name` | tested |
+| `std` cannot be declared [2] | `resolve.rs::std_cannot_be_declared` | tested |
+| `private` on a declaration, across modules | `resolve.rs::a_private_name_cannot_be_used_from_another_module`, `tests/conformance/resolve-private-across-modules` | tested |
+| `private` record fields, and private types in visible signatures | — | todo (needs the type graph) |
+| qualification has one level only: no `A::B::c` | the grammar admits only one level; `parse.rs` | tested |
+| declaration before use, and `also` groups [4.3] | `resolve.rs::a_group_lets_its_members_name_each_other`, `resolve.rs::without_also_a_forward_reference_is_an_error`, `resolve.rs::also_cannot_come_first_or_follow_the_wrong_kind`, `tests/conformance/resolve-also-group-rules` | tested |
+| a name must denote the right kind of thing | `resolve.rs::a_name_must_denote_the_right_kind_of_thing` | tested |
+| the library's names and kinds [9] | `library.rs` tests | tested |
 
 ## Other semantics [4.2]–[4.4], [7] — Phase 2
 

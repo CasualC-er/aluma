@@ -4,6 +4,8 @@
 
 pub mod ast;
 pub mod lex;
+pub mod library;
 pub mod load;
 pub mod parse;
+pub mod resolve;
 pub mod token;

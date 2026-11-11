@@ -1,5 +1,5 @@
 # name: 1. Two small programs
-# source: documentation/guide.md:9
+# source: documentation/guide.md:21
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
 mode = run
 main = TwoSmallPrograms.alm

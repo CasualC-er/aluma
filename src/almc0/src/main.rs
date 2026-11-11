@@ -31,7 +31,7 @@ use std::process::ExitCode;
 
 use alm_core::diag::{Diagnostics, SourceMap};
 use alm_core::options::Options;
-use almc0::load::load;
+use almc0::{load::load, resolve::resolve};
 
 fn main() -> ExitCode {
     let argv: Vec<String> = std::env::args().skip(1).collect();
@@ -65,10 +65,12 @@ fn main() -> ExitCode {
     let mut sources = SourceMap::new();
     let mut diags = Diagnostics::new();
     let program = load(main, &options.path, &mut sources, &mut diags);
-    // Nothing is done with the loaded program yet beyond having parsed it; the next
-    // step is name resolution over `program.modules`, which are already in the order
-    // [4.2] requires (imports before the module that imports them).
-    let _ = program;
+    // Only resolve if the modules parsed: resolving a tree with holes in it reports
+    // names that are missing because the parser could not read them, which buries the
+    // real mistake under noise.
+    if !diags.has_errors() {
+        let _symbols = resolve(&program, &mut diags);
+    }
 
     let rendered = diags.render(&sources);
     if !rendered.is_empty() {

@@ -1,0 +1,4 @@
+# name: a private name cannot be used from another module
+# source: documentation/language_reference.md:4.1
+mode = compile-error
+main = Main.alm

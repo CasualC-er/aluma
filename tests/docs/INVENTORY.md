@@ -13,10 +13,10 @@ exit 0, but its output is not pinned yet. Those are the ones to finish by hand.
 documents defines, so it cannot compile as extracted; the module has to be
 written by hand before the test means anything.
 
-- **compile-ok**: 29
+- **compile-ok**: 27
 - **run**: 2
 - **run (UNPINNED)**: 27
-- **skipped**: 18
+- **skipped**: 20
 
 Total blocks: 76
 
@@ -24,77 +24,77 @@ Total blocks: 76
 |---|---|---|---|---|---|
 | language_reference.md | 24 | keywords | 2. Lexical structure | skipped | `keywords` is reference material |
 | language_reference.md | 114 | — | 4. Declarations | skipped | a schema of the declaration forms, not a program: `params`, `result` and `block` are placeholders |
-| language_reference.md | 145 | — | 4.2 Shared values | compile-ok | language_reference/001-4-2-shared-values |
-| language_reference.md | 164 | — | 4.3 Recursive groups | compile-ok | language_reference/002-4-3-recursive-groups |
-| language_reference.md | 186 | — | 4.4 Generic modules | compile-ok | language_reference/003-4-4-generic-modules |
+| language_reference.md | 145 | — | 4.2 Shared values | skipped | a fragment: the `share` line calls `squares`, which the prose declares, not the block |
+| language_reference.md | 164 | — | 4.3 Recursive groups | compile-ok | language_reference/001-4-3-recursive-groups |
+| language_reference.md | 186 | — | 4.4 Generic modules | compile-ok | language_reference/002-4-4-generic-modules |
 | language_reference.md | 330 | — | 7.5 Exceptions | skipped | no declaration and no `start` |
 | language_reference.md | 747 | ebnf | 10. Grammar | skipped | `ebnf` is reference material |
-| language_reference.md | 832 | — | Binary search in a balanced tree | compile-ok | language_reference/004-binary-search-in-a-balanced-tree |
-| language_reference.md | 875 | — | Strings | compile-ok | language_reference/005-strings |
-| language_reference.md | 919 | — | Procedure parameters | compile-ok | language_reference/006-procedure-parameters |
-| language_reference.md | 948 | — | Fixed-point and exceptions | compile-ok | language_reference/007-fixed-point-and-exceptions |
-| language_reference.md | 993 | — | Tasks: a store and a client | run (UNPINNED) | language_reference/008-tasks-a-store-and-a-client |
-| language_reference.md | 1066 | — | Tasks: published state | run (UNPINNED) | language_reference/009-tasks-published-state |
-| language_reference.md | 1122 | — | Sockets: an echo server | run (UNPINNED) | language_reference/010-sockets-an-echo-server |
-| language_reference.md | 1161 | — | Modules | compile-ok | language_reference/011-modules |
-| language_reference.md | 1204 | — | Modules | run (UNPINNED) | language_reference/012-modules |
-| language_reference.md | 1230 | — | Shared data | compile-ok | language_reference/013-shared-data |
-| language_reference.md | 1254 | — | Shared data | run (UNPINNED) | language_reference/014-shared-data |
-| language_reference.md | 1272 | — | Loops, escapes and library calls | run (UNPINNED) | language_reference/015-loops-escapes-and-library-calls |
-| language_reference.md | 1307 | — | Explicit rounding and units | run (UNPINNED) | language_reference/016-explicit-rounding-and-units |
-| language_reference.md | 1327 | — | Deferred calls | compile-ok | language_reference/017-deferred-calls |
-| language_reference.md | 1346 | — | Hiding a library name | run (UNPINNED) | language_reference/018-hiding-a-library-name |
-| language_reference.md | 1366 | — | Named number types | run (UNPINNED) | language_reference/019-named-number-types |
-| language_reference.md | 1388 | — | Recursive groups | run (UNPINNED) | language_reference/020-recursive-groups |
-| language_reference.md | 1455 | — | A generic module | compile-ok | language_reference/021-a-generic-module |
-| language_reference.md | 1500 | — | A generic module | compile-ok | language_reference/022-a-generic-module |
-| language_reference.md | 1561 | — | A generic module | run (UNPINNED) | language_reference/023-a-generic-module |
-| language_reference.md | 1580 | — | A generic module | run (UNPINNED) | language_reference/024-a-generic-module |
-| guide.md | 9 | — | 1. Two small programs | run (UNPINNED) | guide/025-1-two-small-programs |
-| guide.md | 21 | — | 1. Two small programs | run (UNPINNED) | guide/026-1-two-small-programs |
+| language_reference.md | 832 | — | Binary search in a balanced tree | compile-ok | language_reference/003-binary-search-in-a-balanced-tree |
+| language_reference.md | 875 | — | Strings | compile-ok | language_reference/004-strings |
+| language_reference.md | 919 | — | Procedure parameters | compile-ok | language_reference/005-procedure-parameters |
+| language_reference.md | 948 | — | Fixed-point and exceptions | compile-ok | language_reference/006-fixed-point-and-exceptions |
+| language_reference.md | 993 | — | Tasks: a store and a client | run (UNPINNED) | language_reference/007-tasks-a-store-and-a-client |
+| language_reference.md | 1066 | — | Tasks: published state | run (UNPINNED) | language_reference/008-tasks-published-state |
+| language_reference.md | 1122 | — | Sockets: an echo server | run (UNPINNED) | language_reference/009-sockets-an-echo-server |
+| language_reference.md | 1161 | — | Modules | compile-ok | language_reference/010-modules |
+| language_reference.md | 1204 | — | Modules | run (UNPINNED) | language_reference/011-modules |
+| language_reference.md | 1230 | — | Shared data | compile-ok | language_reference/012-shared-data |
+| language_reference.md | 1254 | — | Shared data | run (UNPINNED) | language_reference/013-shared-data |
+| language_reference.md | 1272 | — | Loops, escapes and library calls | run (UNPINNED) | language_reference/014-loops-escapes-and-library-calls |
+| language_reference.md | 1307 | — | Explicit rounding and units | run (UNPINNED) | language_reference/015-explicit-rounding-and-units |
+| language_reference.md | 1327 | — | Deferred calls | compile-ok | language_reference/016-deferred-calls |
+| language_reference.md | 1346 | — | Hiding a library name | run (UNPINNED) | language_reference/017-hiding-a-library-name |
+| language_reference.md | 1366 | — | Named number types | run (UNPINNED) | language_reference/018-named-number-types |
+| language_reference.md | 1388 | — | Recursive groups | run (UNPINNED) | language_reference/019-recursive-groups |
+| language_reference.md | 1455 | — | A generic module | compile-ok | language_reference/020-a-generic-module |
+| language_reference.md | 1500 | — | A generic module | compile-ok | language_reference/021-a-generic-module |
+| language_reference.md | 1561 | — | A generic module | run (UNPINNED) | language_reference/022-a-generic-module |
+| language_reference.md | 1580 | — | A generic module | run (UNPINNED) | language_reference/023-a-generic-module |
+| guide.md | 9 | — | 1. Two small programs | run (UNPINNED) | guide/024-1-two-small-programs |
+| guide.md | 21 | — | 1. Two small programs | run (UNPINNED) | guide/025-1-two-small-programs |
 | guide.md | 52 | fragment | 2. Source text | skipped | marked `fragment`: not a compilable unit |
 | guide.md | 60 | keywords | 2. Source text | skipped | `keywords` is reference material |
 | guide.md | 117 | fragment | 4.2 Arrays | skipped | marked `fragment`: not a compilable unit |
 | guide.md | 123 | fragment | 4.2 Arrays | skipped | marked `fragment`: not a compilable unit |
-| guide.md | 135 | — | 4.3 Records | compile-ok | guide/027-4-3-records |
+| guide.md | 135 | — | 4.3 Records | compile-ok | guide/026-4-3-records |
 | guide.md | 148 | fragment | 4.4 References | skipped | marked `fragment`: not a compilable unit |
-| guide.md | 159 | — | 4.4 References | compile-ok | guide/028-4-4-references |
-| guide.md | 190 | — | 4.8 Named number types | run (UNPINNED) | guide/029-4-8-named-number-types |
+| guide.md | 159 | — | 4.4 References | compile-ok | guide/027-4-4-references |
+| guide.md | 190 | — | 4.8 Named number types | run (UNPINNED) | guide/028-4-8-named-number-types |
 | guide.md | 297 | fragment | 5.4 Decimal arithmetic | skipped | marked `fragment`: not a compilable unit |
 | guide.md | 341 | fragment | 6. Statements | skipped | marked `fragment`: not a compilable unit |
 | guide.md | 355 | fragment | 6. Statements | skipped | marked `fragment`: not a compilable unit |
-| guide.md | 375 | — | 7. Declarations | compile-ok | guide/030-7-declarations |
-| guide.md | 401 | — | 7.1 Recursive groups | compile-ok | guide/031-7-1-recursive-groups |
-| guide.md | 419 | — | 7.1 Recursive groups | compile-ok | guide/032-7-1-recursive-groups |
+| guide.md | 375 | — | 7. Declarations | compile-ok | guide/029-7-declarations |
+| guide.md | 401 | — | 7.1 Recursive groups | compile-ok | guide/030-7-1-recursive-groups |
+| guide.md | 419 | — | 7.1 Recursive groups | compile-ok | guide/031-7-1-recursive-groups |
 | guide.md | 437 | fragment | 8. Procedures | skipped | marked `fragment`: not a compilable unit |
-| guide.md | 453 | — | 8.1 Parameters | compile-ok | guide/033-8-1-parameters |
-| guide.md | 467 | — | 8.1 Parameters | compile-ok | guide/034-8-1-parameters |
-| guide.md | 486 | — | 8.2 Procedure parameters | run (UNPINNED) | guide/035-8-2-procedure-parameters |
-| guide.md | 519 | — | 9. Exceptions | run | guide/036-9-exceptions |
+| guide.md | 453 | — | 8.1 Parameters | compile-ok | guide/032-8-1-parameters |
+| guide.md | 467 | — | 8.1 Parameters | skipped | a fragment: `push` takes a `ref Cell`, and `Cell` is declared in the prose around it, not in the block |
+| guide.md | 486 | — | 8.2 Procedure parameters | run (UNPINNED) | guide/033-8-2-procedure-parameters |
+| guide.md | 519 | — | 9. Exceptions | run | guide/034-9-exceptions |
 | guide.md | 582 | text | 9.2 Uncaught exceptions | skipped | expected output of 9. Exceptions |
-| guide.md | 600 | — | 9.3 Deferred calls | compile-ok | guide/037-9-3-deferred-calls |
-| guide.md | 632 | — | 10. Modules | run (UNPINNED) | guide/038-10-modules |
-| guide.md | 655 | — | 10. Modules | compile-ok | guide/039-10-modules |
-| guide.md | 698 | — | 10. Modules | run (UNPINNED) | guide/040-10-modules |
-| guide.md | 722 | — | 10. Modules | run (UNPINNED) | guide/041-10-modules |
-| guide.md | 754 | — | 10.1 Generic modules | compile-ok | guide/042-10-1-generic-modules |
-| guide.md | 799 | — | 10.1 Generic modules | compile-ok | guide/043-10-1-generic-modules |
-| guide.md | 860 | — | 10.1 Generic modules | run (UNPINNED) | guide/044-10-1-generic-modules |
-| guide.md | 887 | — | 10.1 Generic modules | run (UNPINNED) | guide/045-10-1-generic-modules |
-| guide.md | 974 | — | 11.3 Messages and replies | run (UNPINNED) | guide/046-11-3-messages-and-replies |
-| guide.md | 1016 | — | 11.3 Messages and replies | compile-ok | guide/047-11-3-messages-and-replies |
+| guide.md | 600 | — | 9.3 Deferred calls | compile-ok | guide/035-9-3-deferred-calls |
+| guide.md | 632 | — | 10. Modules | run (UNPINNED) | guide/036-10-modules |
+| guide.md | 655 | — | 10. Modules | compile-ok | guide/037-10-modules |
+| guide.md | 698 | — | 10. Modules | run (UNPINNED) | guide/038-10-modules |
+| guide.md | 722 | — | 10. Modules | run (UNPINNED) | guide/039-10-modules |
+| guide.md | 754 | — | 10.1 Generic modules | compile-ok | guide/040-10-1-generic-modules |
+| guide.md | 799 | — | 10.1 Generic modules | compile-ok | guide/041-10-1-generic-modules |
+| guide.md | 860 | — | 10.1 Generic modules | run (UNPINNED) | guide/042-10-1-generic-modules |
+| guide.md | 887 | — | 10.1 Generic modules | run (UNPINNED) | guide/043-10-1-generic-modules |
+| guide.md | 974 | — | 11.3 Messages and replies | run (UNPINNED) | guide/044-11-3-messages-and-replies |
+| guide.md | 1016 | — | 11.3 Messages and replies | compile-ok | guide/045-11-3-messages-and-replies |
 | guide.md | 1157 | text | 11.8 Ending and closing down | skipped | terminal output or transcript |
-| guide.md | 1195 | — | 11.9 Published views | run (UNPINNED) | guide/048-11-9-published-views |
-| guide.md | 1253 | — | 12. Shared values | compile-ok | guide/049-12-shared-values |
-| guide.md | 1379 | — | 13.4 Sockets | run | guide/050-13-4-sockets |
+| guide.md | 1195 | — | 11.9 Published views | run (UNPINNED) | guide/046-11-9-published-views |
+| guide.md | 1253 | — | 12. Shared values | compile-ok | guide/047-12-shared-values |
+| guide.md | 1379 | — | 13.4 Sockets | run | guide/048-13-4-sockets |
 | guide.md | 1478 | text | 13.4 Sockets | skipped | expected output of 13.4 Sockets |
-| guide.md | 1529 | — | 14.2 Strings | run (UNPINNED) | guide/051-14-2-strings |
+| guide.md | 1529 | — | 14.2 Strings | run (UNPINNED) | guide/049-14-2-strings |
 | guide.md | 1648 | ebnf | Appendix A. Grammar | skipped | `ebnf` is reference material |
-| style_guide.md | 38 | — | 2. Layout | compile-ok | style_guide/052-2-layout |
+| style_guide.md | 38 | — | 2. Layout | compile-ok | style_guide/050-2-layout |
 | style_guide.md | 103 | fragment | 5. Comments | skipped | marked `fragment`: not a compilable unit |
-| style_guide.md | 147 | — | 9. Exceptions | run (UNPINNED) | style_guide/053-9-exceptions |
-| style_guide.md | 175 | — | 10. Resources | compile-ok | style_guide/054-10-resources |
-| style_guide.md | 194 | — | 11. Decimal and whole numbers | compile-ok | style_guide/055-11-decimal-and-whole-numbers |
-| style_guide.md | 223 | — | 12. Tasks | compile-ok | style_guide/056-12-tasks |
-| style_guide.md | 260 | — | 13. Tests | run (UNPINNED) | style_guide/057-13-tests |
-| style_guide.md | 285 | — | 14. Groups and generic modules | run (UNPINNED) | style_guide/058-14-groups-and-generic-modules |
+| style_guide.md | 147 | — | 9. Exceptions | run (UNPINNED) | style_guide/051-9-exceptions |
+| style_guide.md | 175 | — | 10. Resources | compile-ok | style_guide/052-10-resources |
+| style_guide.md | 194 | — | 11. Decimal and whole numbers | compile-ok | style_guide/053-11-decimal-and-whole-numbers |
+| style_guide.md | 223 | — | 12. Tasks | compile-ok | style_guide/054-12-tasks |
+| style_guide.md | 260 | — | 13. Tests | run (UNPINNED) | style_guide/055-13-tests |
+| style_guide.md | 285 | — | 14. Groups and generic modules | run (UNPINNED) | style_guide/056-14-groups-and-generic-modules |

@@ -1,5 +1,0 @@
-# name: 4.2 Shared values
-# source: documentation/language_reference.md:145
-# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
-mode = compile-ok
-main = SharedValues.alm

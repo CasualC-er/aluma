@@ -1,8 +1,0 @@
-# name: 10.1 Generic modules
-# source: documentation/guide.md:860
-# extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
-mode = run
-main = GenericModules.alm
-exit = 0
-
-[stdout] ignore

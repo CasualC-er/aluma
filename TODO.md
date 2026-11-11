@@ -71,11 +71,11 @@ is what makes "alongside" checkable.
 - [x] Harness runner: invokes the driver for `compile-ok` and `compile-error` tests; 32 of the 61 tests now run for real, 29 wait on a backend
 
 - [x] Module loader: file = module, `--path` order, implementation modules last, `Net` overridable [4.1]
-- [x] Import graph: no self-import, acyclic with the cycle named in the error — *non-transitivity is a name-resolution rule and waits for it*
-- [ ] One flat namespace per module; imported module names occupy it [4.1]
-- [ ] `std` auto-import; shadowing by top-level, parameter and local declarations; the unhidable name list; `std::name` always reaches the library [4.1]
-- [ ] `private` on declarations and record fields; cross-module errors; private types usable in visible signatures [4.1]
-- [ ] Declaration-before-use; `also` groups and their rules [4.3]
+- [x] Import graph: not transitive, no self-import, acyclic with the cycle named in the error
+- [x] One flat namespace per module; imported module names occupy it [4.1]
+- [x] `std` auto-import; shadowing by top-level, parameter and local declarations; the unhidable name list; `std::name` always reaches the library [4.1]
+- [ ] `private` on declarations and record fields; cross-module errors; private types usable in visible signatures [4.1] — *declarations done; record fields and signature rules need the type graph*
+- [x] Declaration-before-use; `also` groups and their rules [4.3]
 - [ ] By-value containment cycles and alias loops in type groups, errors naming the cycle [4.3]
 - [ ] Name-equivalence type identity; every `record` its own type; `ref` nullable [3.5, 7.1]
 - [ ] Zero values for every type [3.3]

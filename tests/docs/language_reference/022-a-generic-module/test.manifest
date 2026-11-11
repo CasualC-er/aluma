@@ -1,5 +1,8 @@
 # name: A generic module
-# source: documentation/language_reference.md:1500
+# source: documentation/language_reference.md:1561
 # extracted by tools/extract_doc_tests.py — edit freely, it will not be overwritten
-mode = compile-ok
-main = Lookup.alm
+mode = run
+main = AGenericModule.alm
+exit = 0
+
+[stdout] ignore
