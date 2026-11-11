@@ -9,7 +9,7 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use alm_core::diag::Diagnostics;
+use alm_core::diag::{Diagnostics, SourceMap};
 use alm_core::span::SourceId;
 use almc0::lex::lex;
 use almc0::token::TokenKind;
@@ -60,10 +60,20 @@ fn every_module_in_the_corpus_lexes_without_a_diagnostic() {
             .unwrap_or(path)
             .display()
             .to_string();
+        // A diagnostic names the module, not a path (see `alm_core::diag`), but a
+        // failure here must still say which file to look at, so the test prefixes the
+        // repository-relative path itself.
+        let module = path
+            .file_stem()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned();
+        let mut sources = SourceMap::new();
+        sources.add(module, src.clone());
         let mut diags = Diagnostics::new();
         let tokens = lex(SourceId(0), &src, &mut diags);
         for d in diags.items() {
-            failures.push(d.render(&rel, &src));
+            failures.push(format!("{rel}: {}", d.render(&sources)));
         }
         assert_eq!(
             tokens.last().map(|t| &t.kind),

@@ -1226,12 +1226,22 @@ mod tests {
 
     const S: SourceId = SourceId(0);
 
+    /// A source map holding just this text, so that a diagnostic can be rendered.
+    /// The module is named `T`, and a position is `T:line:column` — never a path
+    /// (see `alm_core::diag`).
+    fn sources(src: &str) -> alm_core::diag::SourceMap {
+        let mut m = alm_core::diag::SourceMap::new();
+        let id = m.add("T", src);
+        assert_eq!(id, S, "the first module added must be the one we lexed");
+        m
+    }
+
     /// Parse, expecting no diagnostic, and return the dump.
     fn ok(src: &str) -> String {
         let mut d = Diagnostics::new();
         let tokens = lex(S, src, &mut d);
         let program = parse(S, &tokens, &mut d);
-        let rendered: Vec<String> = d.items().iter().map(|x| x.render("T.alm", src)).collect();
+        let rendered: Vec<String> = d.items().iter().map(|x| x.render(&sources(src))).collect();
         assert!(rendered.is_empty(), "unexpected diagnostics: {rendered:#?}");
         ast::dump(&program)
     }
@@ -1258,7 +1268,7 @@ mod tests {
         let mut d = Diagnostics::new();
         let tokens = lex(S, src, &mut d);
         let _ = parse(S, &tokens, &mut d);
-        let rendered: Vec<String> = d.items().iter().map(|x| x.render("T.alm", src)).collect();
+        let rendered: Vec<String> = d.items().iter().map(|x| x.render(&sources(src))).collect();
         assert!(!rendered.is_empty(), "expected a diagnostic for {src:?}");
         rendered
     }
@@ -1558,7 +1568,7 @@ mod tests {
         // Phase 1 requires this, and the harness depends on it.
         let e = errs("type A is ;\ntype B is int;\ntype C is ;\nproc f( is\nbegin\nend;\n");
         assert!(e.len() >= 3, "expected several errors, got {e:#?}");
-        assert!(e[0].starts_with("T.alm:1:11:"), "{:?}", e[0]);
+        assert!(e[0].starts_with("T:1:11:"), "{:?}", e[0]);
         // Recovery must not lose the good declaration between the bad ones.
         let mut d = Diagnostics::new();
         let src = "type A is ;\ntype B is int;\n";

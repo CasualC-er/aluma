@@ -121,6 +121,31 @@ def defined_module(block: Block) -> str | None:
     return m.group(1) if m else None
 
 
+def split_top_level(text: str) -> list[str]:
+    """Split on commas that are not inside parentheses.
+
+    An import line may carry a generic instance whose arguments are themselves
+    comma-separated: `import Numbers is Stack(int), Ages is Lookup(String, int, eq);`
+    has two items, not five. Splitting on every comma mistakes `int` and `eq)` for
+    module names.
+    """
+    out: list[str] = []
+    depth = 0
+    current = ""
+    for c in text:
+        if c == "(":
+            depth += 1
+        elif c == ")":
+            depth -= 1
+        if c == "," and depth == 0:
+            out.append(current)
+            current = ""
+        else:
+            current += c
+    out.append(current)
+    return out
+
+
 def imports_needed(body: str) -> list[str]:
     """The module files a body needs, in order of first appearance."""
     needed: list[str] = []
@@ -128,7 +153,7 @@ def imports_needed(body: str) -> list[str]:
         m = IMPORT_LINE.match(line)
         if not m:
             continue
-        for item in m.group(1).split(","):
+        for item in split_top_level(m.group(1)):
             item = item.strip()
             # `X is G(args)` imports an instance of the generic module G.
             inst = re.match(r"[A-Za-z][A-Za-z0-9]*\s+is\s+([A-Za-z][A-Za-z0-9]*)", item)

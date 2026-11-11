@@ -1,0 +1,91 @@
+# Conformance matrix
+
+Every numbered rule of `documentation/language_reference.md` and the test or tests that
+pin it. The plan makes this a Phase 0 deliverable and a Phase 8 CI gate (ADR-013.4),
+for one reason: with no interpreter, a codegen or semantic bug surfaces only as a wrong
+answer, so coverage *is* the safety net. A rule with no test is not implemented, however
+much code appears to implement it.
+
+**How to use it.** Implementing a rule means adding its row here with the test that
+pins it. A row with no test is a rule the compiler may get wrong silently. The matrix
+is checked in CI from Phase 8; until then it is checked by hand at the end of each
+phase.
+
+Status values: `tested` (a test pins it), `partial` (some cases pinned), `todo`.
+
+Where a test lives:
+
+| Place | Holds |
+|---|---|
+| `tests/docs/` | extracted from the documents; see `INVENTORY.md` |
+| `tests/conformance/` | hand-written, one per rule the documents do not reach |
+| `src/*/src/**.rs` `#[cfg(test)]` | unit tests of a component against the spec text |
+| `src/almc0/tests/` | whole-corpus integration tests |
+
+---
+
+## The errors the specification names explicitly
+
+These are the sentences in the reference that say "is a compile error" or "is an error".
+They are the floor, not the whole list: most rules are stated as "must", "cannot" or
+"only", and each of those is an error too. The Phase 2 and Phase 8 sections of `TODO.md`
+enumerate those, and rows are added here as each is implemented.
+
+| § | Rule | Test | Status |
+|---|---|---|---|
+| [2] | a literal larger than the largest `int`, except `9223372036854775808` / `0x8000000000000000` under `_` | `lex.rs::the_over_max_rule_and_its_two_spellings`, `parse.rs::the_over_max_literal_is_legal_only_under_underscore` | tested |
+| [2] | any escape outside `\n \t \r \0 \\ \' \" \u{h}` | `lex.rs::the_escape_set_is_exactly_the_one_in_the_spec` | tested |
+| [2] | a literal cannot contain a raw line break | `lex.rs::a_literal_cannot_hold_a_raw_line_break` | tested |
+| [2] | a char literal denotes exactly one code point | `lex.rs::a_char_literal_is_exactly_one_code_point` | tested |
+| [2] | a `fixed` literal is decimal (amendment A-001) | `lex.rs::a_fixed_literal_is_decimal_only` | tested |
+| [4.1] | `import` lines come before the other declarations | `parse.rs::generic_lines_come_first_and_imports_next` | partial |
+| [4.1] | using a library name before the declaration that hides it | — | todo |
+| [4.1] | `private` on anything other than the declarations it may prefix | — | todo |
+| [4.3] | a type group cannot contain a cycle of containment by value; an alias loop | — | todo |
+| [4.4] | instantiations nest at most 32 deep | — | todo |
+| [5] | calling a function as a plain statement; `void` on a procedure with no result | — | todo |
+| [7.4] | `/` with two `int` operands | — | todo |
+| [7.4] | two different tags in `+`, `-` or a comparison | — | todo |
+| [10] | relations do not chain | `parse.rs::relations_do_not_chain` | tested |
+| [10] | every other shape of syntax error | `parse.rs::a_negative_test_for_each_shape_of_syntax_error` | partial |
+
+## Lexical structure [2]
+
+| Rule | Test | Status |
+|---|---|---|
+| identifiers are ASCII, case-sensitive, no underscores | `lex.rs::identifiers_are_ascii_and_hold_no_underscore` | tested |
+| the 52 reserved words | `token.rs::the_keyword_table_is_the_one_in_the_specification` | tested |
+| `#` to end of line, not inside a literal | `lex.rs::comments_run_to_the_end_of_the_line` | tested |
+| integer literals, decimal and `0x` | `lex.rs::integer_literals_decimal_and_hex` | tested |
+| `fixed` literal scale is the digits after `v` | `lex.rs::fixed_literals_keep_their_digits_and_scale` | tested |
+| `\u{h}`: one to six digits, a valid code point | `lex.rs::unicode_escapes` | tested |
+| the glyph table, and the absence of a not-equal glyph | `token.rs::the_glyph_table_holds_what_the_specification_lists`, `lex.rs::there_is_no_not_equal_glyph` | tested |
+| char literals: the rules have no cover in the extracted corpus | `lex.rs` unit tests only — see README | partial |
+
+## Grammar [10]
+
+| Rule | Test | Status |
+|---|---|---|
+| every declaration form | `parse.rs::the_declaration_forms_of_section_four` | tested |
+| `also` and `private` prefixes | `parse.rs::also_and_private_prefix_a_declaration` | tested |
+| every type form | `parse.rs::every_type_of_section_three` | tested |
+| every statement form | `parse.rs::every_statement_of_section_five` | tested |
+| precedence levels 1–8 | `parse.rs::precedence_follows_the_levels_of_section_six` | tested |
+| `not` binds looser than the comparisons | `parse.rs::not_binds_looser_than_a_comparison` | tested |
+| selectors on a call result | `parse.rs::selectors_are_allowed_on_a_call_result` | tested |
+| `garg` is a type or an expression | `parse.rs::a_generic_argument_may_be_a_type_or_an_expression` | tested |
+| the whole grammar, over the documents' examples | `src/almc0/tests/parse_corpus.rs` | tested |
+
+## Semantics [4], [7] — Phase 2
+
+Rows are added as each rule is implemented, with its negative test. The enumeration to
+work through is the Phase 2 checklist in `TODO.md`, which was derived from these
+sections; nothing there may be ticked without a row here.
+
+## Runtime [7.5], [8], [9] — Phase 4 onward
+
+| Rule | Test | Status |
+|---|---|---|
+| each of the 22 predefined exceptions is raised where the table says | — | todo |
+| the `uncaught` and `failed` report forms | — | todo |
+| exit statuses 0, the `int` form, 1, 130, 143 | — | todo |

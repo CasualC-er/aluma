@@ -15,8 +15,7 @@ written by hand before the test means anything.
 
 - **compile-ok**: 29
 - **run**: 2
-- **run (UNPINNED)**: 22
-- **run (UNPINNED) (NEEDS MODULES)**: 5
+- **run (UNPINNED)**: 27
 - **skipped**: 18
 
 Total blocks: 76
@@ -49,8 +48,8 @@ Total blocks: 76
 | language_reference.md | 1388 | — | Recursive groups | run (UNPINNED) | language_reference/020-recursive-groups |
 | language_reference.md | 1455 | — | A generic module | compile-ok | language_reference/021-a-generic-module |
 | language_reference.md | 1500 | — | A generic module | compile-ok | language_reference/022-a-generic-module |
-| language_reference.md | 1561 | — | A generic module | run (UNPINNED) (NEEDS MODULES) | language_reference/023-a-generic-module |
-| language_reference.md | 1580 | — | A generic module | run (UNPINNED) (NEEDS MODULES) | language_reference/024-a-generic-module |
+| language_reference.md | 1561 | — | A generic module | run (UNPINNED) | language_reference/023-a-generic-module |
+| language_reference.md | 1580 | — | A generic module | run (UNPINNED) | language_reference/024-a-generic-module |
 | guide.md | 9 | — | 1. Two small programs | run (UNPINNED) | guide/025-1-two-small-programs |
 | guide.md | 21 | — | 1. Two small programs | run (UNPINNED) | guide/026-1-two-small-programs |
 | guide.md | 52 | fragment | 2. Source text | skipped | marked `fragment`: not a compilable unit |
@@ -80,8 +79,8 @@ Total blocks: 76
 | guide.md | 722 | — | 10. Modules | run (UNPINNED) | guide/041-10-modules |
 | guide.md | 754 | — | 10.1 Generic modules | compile-ok | guide/042-10-1-generic-modules |
 | guide.md | 799 | — | 10.1 Generic modules | compile-ok | guide/043-10-1-generic-modules |
-| guide.md | 860 | — | 10.1 Generic modules | run (UNPINNED) (NEEDS MODULES) | guide/044-10-1-generic-modules |
-| guide.md | 887 | — | 10.1 Generic modules | run (UNPINNED) (NEEDS MODULES) | guide/045-10-1-generic-modules |
+| guide.md | 860 | — | 10.1 Generic modules | run (UNPINNED) | guide/044-10-1-generic-modules |
+| guide.md | 887 | — | 10.1 Generic modules | run (UNPINNED) | guide/045-10-1-generic-modules |
 | guide.md | 974 | — | 11.3 Messages and replies | run (UNPINNED) | guide/046-11-3-messages-and-replies |
 | guide.md | 1016 | — | 11.3 Messages and replies | compile-ok | guide/047-11-3-messages-and-replies |
 | guide.md | 1157 | text | 11.8 Ending and closing down | skipped | terminal output or transcript |
@@ -98,4 +97,4 @@ Total blocks: 76
 | style_guide.md | 194 | — | 11. Decimal and whole numbers | compile-ok | style_guide/055-11-decimal-and-whole-numbers |
 | style_guide.md | 223 | — | 12. Tasks | compile-ok | style_guide/056-12-tasks |
 | style_guide.md | 260 | — | 13. Tests | run (UNPINNED) | style_guide/057-13-tests |
-| style_guide.md | 285 | — | 14. Groups and generic modules | run (UNPINNED) (NEEDS MODULES) | style_guide/058-14-groups-and-generic-modules |
+| style_guide.md | 285 | — | 14. Groups and generic modules | run (UNPINNED) | style_guide/058-14-groups-and-generic-modules |

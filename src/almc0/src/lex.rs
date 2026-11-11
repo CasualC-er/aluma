@@ -551,11 +551,21 @@ mod tests {
 
     const S: SourceId = SourceId(0);
 
+    /// A source map holding just this text, so that a diagnostic can be rendered.
+    /// The module is named `T`, and a position is `T:line:column` — never a path
+    /// (see `alm_core::diag`).
+    fn sources(src: &str) -> alm_core::diag::SourceMap {
+        let mut m = alm_core::diag::SourceMap::new();
+        let id = m.add("T", src);
+        assert_eq!(id, S, "the first module added must be the one we lexed");
+        m
+    }
+
     /// Lex, expecting no diagnostic. Returns the tokens without the trailing `Eof`.
     fn ok(src: &str) -> Vec<TokenKind> {
         let mut d = Diagnostics::new();
         let tokens = lex(S, src, &mut d);
-        let rendered: Vec<String> = d.items().iter().map(|x| x.render("T.alm", src)).collect();
+        let rendered: Vec<String> = d.items().iter().map(|x| x.render(&sources(src))).collect();
         assert!(rendered.is_empty(), "unexpected diagnostics: {rendered:#?}");
         assert_eq!(tokens.last().map(|t| &t.kind), Some(&TokenKind::Eof));
         tokens[..tokens.len() - 1]
@@ -568,7 +578,7 @@ mod tests {
     fn errs(src: &str) -> Vec<String> {
         let mut d = Diagnostics::new();
         let _ = lex(S, src, &mut d);
-        let rendered: Vec<String> = d.items().iter().map(|x| x.render("T.alm", src)).collect();
+        let rendered: Vec<String> = d.items().iter().map(|x| x.render(&sources(src))).collect();
         assert!(!rendered.is_empty(), "expected a diagnostic for {src:?}");
         rendered
     }
@@ -852,9 +862,9 @@ mod tests {
         // annotated lines.
         let d = errs("a != b;\nc := 0xg;\nd := '\\q';");
         assert_eq!(d.len(), 3, "{d:#?}");
-        assert!(d[0].starts_with("T.alm:1:3:"), "{:?}", d[0]);
-        assert!(d[1].starts_with("T.alm:2:6:"), "{:?}", d[1]);
-        assert!(d[2].starts_with("T.alm:3:7:"), "{:?}", d[2]);
+        assert!(d[0].starts_with("T:1:3:"), "{:?}", d[0]);
+        assert!(d[1].starts_with("T:2:6:"), "{:?}", d[1]);
+        assert!(d[2].starts_with("T:3:7:"), "{:?}", d[2]);
     }
 
     #[test]
@@ -885,14 +895,14 @@ mod tests {
         let src = "x := \"a\\\nvar y: int;\nvar z: int;\n";
         let mut d = Diagnostics::new();
         let tokens = lex(S, src, &mut d);
-        let rendered: Vec<String> = d.items().iter().map(|x| x.render("T.alm", src)).collect();
+        let rendered: Vec<String> = d.items().iter().map(|x| x.render(&sources(src))).collect();
         assert_eq!(
             rendered.len(),
             1,
             "one mistake, one diagnostic: {rendered:#?}"
         );
         assert!(rendered[0].contains("line break"), "{rendered:?}");
-        assert!(rendered[0].starts_with("T.alm:1:6:"), "{:?}", rendered[0]);
+        assert!(rendered[0].starts_with("T:1:6:"), "{:?}", rendered[0]);
         // The following lines must still be there.
         let keywords = tokens
             .iter()

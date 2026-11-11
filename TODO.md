@@ -36,7 +36,7 @@ parallel with the phase above it.
 - [x] `documentation/amendments.md` — log for spec changes the implementation forces
 - [x] **Conformance harness first** (D13.4): a test is a *directory* — main module + further modules + options + `args` + `[stdin]` + expected exit status, stdout, stderr or diagnostics; `run` / `compile-ok` / `compile-error` modes, with `#!error` line annotations for the errors [11] states inline
 - [x] Extract every code example from the reference, guide and style guide into `tests/docs/`, with the outcomes the docs state
-- [ ] Conformance matrix: every numbered spec rule → its test(s)
+- [x] Conformance matrix: every numbered spec rule → its test(s) — `tests/conformance/matrix.md`, seeded with Phase 0/1; a Phase 2 rule may not be ticked without a row in it
 
 ## Phase 1 — Lexer and parser (`almc0`)
 
@@ -59,6 +59,16 @@ parallel with the phase above it.
 - [x] Parser tests: every doc example parses clean, the AST dump is a function of the source alone (for the Phase 10 differential), and there is a negative test per shape of syntax error — a *source* round-trip waits for the Phase 12 formatter
 
 ## Phase 2 — Semantics (`almc0`)
+
+Decided before starting (see `alm-core::diag`): a diagnostic is a primary line plus
+indented notes with their own spans — [4.3] requires a containment cycle to be reported
+"naming the cycle" — with no error codes, and a position names the **module**, never a
+path, so that diagnostic text cannot depend on `--path` or on where the tree lives
+(ADR-008). Negative tests are written alongside each rule, and `tests/conformance/matrix.md`
+is what makes "alongside" checkable.
+
+- [ ] `almc0` driver: a binary taking source files and the [8.9] options, writing diagnostics to standard error — without it nothing in the corpus is actually run
+- [ ] Harness runner: invoke the driver for `compile-ok` and `compile-error` tests, so the 29 extracted `compile-ok` tests become real conformance tests
 
 - [ ] Module loader: file = module, `--path` order, implementation modules last, `Net` overridable [4.1]
 - [ ] Import graph: not transitive, no self-import, acyclic with the cycle named in the error
