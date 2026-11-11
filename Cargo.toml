@@ -1,0 +1,31 @@
+# Alúma workspace. Four crates per ADR-002: a shared core, the stage-0 compiler,
+# the backend and the runtime; plus `almtest`, the conformance harness (ADR-013).
+[workspace]
+resolver = "3"
+members = [
+    "src/alm-core",
+    "src/almc0",
+    "src/almbe",
+    "src/almrt",
+    "src/almtest",
+]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.99"
+license = "Apache-2.0"
+publish = false
+
+[workspace.dependencies]
+alm-core = { path = "src/alm-core" }
+
+# The whole point of ADR-008 is byte-exact output, and of ADR-013 is that a wrong
+# answer is the only signal we get. Overflow checks stay on in release builds:
+# a silent wrap in the compiler would be indistinguishable from a miscompile.
+[profile.release]
+overflow-checks = true
+debug-assertions = false
+
+[profile.dev]
+overflow-checks = true

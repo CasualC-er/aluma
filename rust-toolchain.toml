@@ -1,0 +1,5 @@
+# Pinned so that CI, the bootstrap job and a developer machine agree (ADR-002).
+[toolchain]
+channel = "1.99.1"
+components = ["rustfmt", "clippy"]
+profile = "default"

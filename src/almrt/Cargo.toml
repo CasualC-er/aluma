@@ -1,0 +1,15 @@
+[package]
+name = "almrt"
+description = "Runtime: per-task heaps and precise GC, the round barrier, decimal arithmetic, exceptions and reports, I/O"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# Generated programs link against this as a static archive.
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+alm-core = { workspace = true }

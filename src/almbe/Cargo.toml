@@ -1,0 +1,14 @@
+[package]
+name = "almbe"
+description = "Backend: canonical IR to textual LLVM IR to a linked binary (ADR-001)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+alm-core = { workspace = true }
+
+[lints.rust]
+unsafe_code = "forbid"

@@ -1,0 +1,8 @@
+/target
+**/*.rs.bk
+# Build products of the Alúma toolchain itself.
+/out
+*.ll
+*.o
+# `*.ir` is deliberately NOT ignored: the bootstrap seed `almc.2.ir` is checked in
+# (plan Phase 11), and so are the golden IR snapshots of Phase 3.
