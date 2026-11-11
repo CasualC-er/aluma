@@ -79,7 +79,7 @@ is what makes "alongside" checkable.
 - [ ] By-value containment cycles and alias loops in type groups, errors naming the cycle [4.3]
 - [ ] Name-equivalence type identity; every `record` its own type; `ref` nullable [3.5, 7.1]
 - [ ] Zero values for every type [3.3]
-- [ ] Constant expression evaluator: `const`, `enum`, sizes, `fixed(p,s)` arguments, unbounded decimal
+- [x] Constant expression evaluator: `const`, `enum`, sizes, `fixed(p,s)` arguments, unbounded decimal — *calls do not fold; see QUESTIONS.md 4*
 - [ ] `fixed` scale rules: `+ -` max scale, `*` sum, `/` sum, `int` as scale 0, `int/int` rejected [7.4]
 - [ ] Assignment checks: `Overflow`, `LostPrecision`, `rounded` [7.4]
 - [ ] The rounding-step set and the single-rounding special case (syntactic) [7.4]

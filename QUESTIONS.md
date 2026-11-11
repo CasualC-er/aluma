@@ -32,3 +32,24 @@ changing it is a one-line change plus that test.
 Nothing in the reference says whether `proc f(a: int) var a: int;` is an error. I report
 it, on the grounds that it can only be a mistake. Tell me if you would rather it were
 allowed (the local shadowing the parameter).
+
+## 4. A procedure call is not a constant expression
+
+[4] says constants are "compile-time constant expressions" without saying which calls,
+if any, fold. `strFixed`'s `k` and `power`'s exponent are *described* as constant
+expressions, but that is about their arguments, not about the calls themselves being
+foldable. I reject every call in a constant expression, with a message saying why.
+
+That is the direction that cannot be wrong later: allowing a call now and discovering
+the reference meant otherwise would break programs that rely on it, while allowing more
+folding later breaks nothing. If you want `power(2, 10)` or `strFixed("1.5", 2)` to fold,
+say so and it is a contained change in `consts.rs`.
+
+## 5. An inexact constant division is rejected outright
+
+A division is a rounding step, and losing a non-zero digit at one raises
+`LostPrecision` unless the statement says `rounded` [7.4]. A `const` declaration has no
+`rounded`, so `const X is 1v00 / 3v00;` cannot be written at all — the compiler rejects
+it and suggests writing the value out or using `divide(a, b, k, mode)`. I believe that
+follows from the spec rather than being a choice, but it is the kind of thing worth a
+second opinion, since the alternative reading is that a constant simply rounds.

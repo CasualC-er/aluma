@@ -31,7 +31,7 @@ use std::process::ExitCode;
 
 use alm_core::diag::{Diagnostics, SourceMap};
 use alm_core::options::Options;
-use almc0::{load::load, resolve::resolve};
+use almc0::{consts::evaluate, load::load, resolve::resolve};
 
 fn main() -> ExitCode {
     let argv: Vec<String> = std::env::args().skip(1).collect();
@@ -70,6 +70,9 @@ fn main() -> ExitCode {
     // real mistake under noise.
     if !diags.has_errors() {
         let _symbols = resolve(&program, &mut diags);
+        if !diags.has_errors() {
+            let _consts = evaluate(&program, &mut diags);
+        }
     }
 
     let rendered = diags.render(&sources);

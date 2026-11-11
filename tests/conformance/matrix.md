@@ -113,6 +113,26 @@ enumerate those, and rows are added here as each is implemented.
 | a name must denote the right kind of thing | `resolve.rs::a_name_must_denote_the_right_kind_of_thing` | tested |
 | the library's names and kinds [9] | `library.rs` tests | tested |
 
+## Constants and arithmetic [4], [7.3], [7.4] — Phase 2
+
+| Rule | Test | Status |
+|---|---|---|
+| `fixed` is exact, unbounded in intermediates | `decimal.rs::precision_is_unbounded` | tested |
+| add and subtract take the larger scale; multiply adds them | `decimal.rs::addition_and_subtraction_take_the_larger_scale`, `decimal.rs::multiplication_adds_the_scales`, `consts.rs::fixed_arithmetic_follows_the_scale_rules` | tested |
+| comparison is by value, so `1v5 = 1v50` | `decimal.rs::comparison_is_by_value_not_by_scale` | tested |
+| division gives the sum of the scales | `decimal.rs::the_worked_examples_of_section_seven_four` | tested |
+| the six rounding modes | `decimal.rs::every_rounding_mode_of_section_seven_four` | tested |
+| `rescale` fills zeros when `k` is larger | `decimal.rs::rescaling_upward_fills_in_zeros_and_loses_nothing` | tested |
+| the number text rules of [9.2] | `decimal.rs::the_number_text_rules_of_nine_two` | tested |
+| `int` arithmetic is checked; overflow is an error | `consts.rs::integer_arithmetic_is_checked` | tested |
+| `div` and `mod` are Euclidean | `consts.rs::div_and_mod_are_euclidean`, `consts.rs::euclidean_handles_the_min_int_case` | tested |
+| `/` with two `int` operands is a compile error | `consts.rs::slash_on_two_ints_is_a_compile_error` | tested |
+| a zero divisor | `consts.rs::div_and_mod_are_euclidean`, `decimal.rs::a_zero_divisor_is_reported_rather_than_panicking` | tested |
+| `enum A, B, C` declares the ints 0, 1, 2 | `consts.rs::a_constant_may_name_an_earlier_constant_or_an_enum_name` | tested |
+| a constant may name an earlier constant, including another module's | `consts.rs::a_constant_of_another_module` | tested |
+| the `rounded` assignment rules, and single rounding | — | todo |
+| named number types and their tags | — | todo |
+
 ## Other semantics [4.2]–[4.4], [7] — Phase 2
 
 Rows are added as each rule is implemented, with its negative test. The enumeration to
