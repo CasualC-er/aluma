@@ -366,6 +366,108 @@ pub fn build(loaded: &Loaded, consts: &Consts, diags: &mut Diagnostics) -> Types
     types
 }
 
+/// Resolves a type's syntax to an already-interned id, without interning anything.
+///
+/// The graph is built once (`build`); a later phase asking "what type is this `var`?"
+/// must find the same id, not make a new one, or two spellings of one type would
+/// compare unequal and name equivalence would be broken [3.5].
+pub struct Lookup<'a> {
+    pub module: &'a str,
+    pub types: &'a Types,
+    /// Needed to rebuild the key of an `array [n] of T` or a `fixed(p, s)`, whose keys
+    /// hold the *values* of their constant expressions.
+    pub consts: &'a Consts,
+}
+
+impl Lookup<'_> {
+    /// The id of this type, if the graph holds it. `None` when it does not — a type
+    /// whose construction reported an error, or one mentioning a name that does not
+    /// resolve — in which case the caller treats the type as unknown rather than
+    /// guessing.
+    pub fn resolve(&mut self, ty: &ast::Type) -> Option<TypeId> {
+        // A named type is found by name, not by a key: that is what name equivalence
+        // means [3.5].
+        if let ast::TypeKind::Named(q) = &ty.kind {
+            return self.named(q);
+        }
+        let key = self.key(ty)?;
+        self.types.interned.get(&key).copied()
+    }
+
+    /// The interning key of a type, matching the keys `Builder` writes.
+    fn key(&mut self, ty: &ast::Type) -> Option<String> {
+        Some(match &ty.kind {
+            ast::TypeKind::Int => "int".to_owned(),
+            ast::TypeKind::Bool => "bool".to_owned(),
+            ast::TypeKind::Char => "char".to_owned(),
+            ast::TypeKind::Ref(q) => format!("ref{}", self.named(q)?.0),
+            ast::TypeKind::RefArray(inner) => {
+                format!("refarrayof{}", self.id(inner)?.0)
+            }
+            ast::TypeKind::Inbox(q) => format!("inboxof{}", self.named(q)?.0),
+            ast::TypeKind::Mailbox(q) => format!("mailboxof{}", self.named(q)?.0),
+            ast::TypeKind::Reply(q) => format!("replyof{}", self.named(q)?.0),
+            ast::TypeKind::View(q) => format!("viewof{}", self.named(q)?.0),
+            ast::TypeKind::Publisher(q) => format!("publisherof{}", self.named(q)?.0),
+            ast::TypeKind::Task(None) => "task".to_owned(),
+            ast::TypeKind::Task(Some(q)) => format!("taskof{}", self.named(q)?.0),
+            ast::TypeKind::Fixed { precision, scale } => {
+                let p = self.constant(precision)?;
+                let s = self.constant(scale)?;
+                format!("fixed({p},{s})")
+            }
+            ast::TypeKind::Array { length, element } => {
+                let n = self.constant(length)?;
+                format!("array[{n}]of{}", self.id(element)?.0)
+            }
+            // A record is its own type [3.5], so it cannot be found by structure at
+            // all: an inline `var r: record ... end;` has no key, and the caller treats
+            // its type as unknown. Declared records are found by name instead.
+            ast::TypeKind::Record { .. } | ast::TypeKind::Named(_) => return None,
+        })
+    }
+
+    fn id(&mut self, ty: &ast::Type) -> Option<TypeId> {
+        self.resolve(ty)
+    }
+
+    /// A constant that must be a non-negative `int`, evaluated silently: any error in
+    /// it was reported when the graph was built, and reporting again here would double
+    /// every such diagnostic.
+    fn constant(&mut self, expr: &ast::Expr) -> Option<i64> {
+        let mut quiet = Diagnostics::new();
+        match crate::consts::evaluate_expr(self.module, self.consts, expr, &mut quiet) {
+            Some(crate::consts::ConstValue::Int(v)) if v >= 0 => Some(v),
+            _ => None,
+        }
+    }
+
+    fn named(&mut self, q: &ast::QIdent) -> Option<TypeId> {
+        let module = q
+            .module
+            .as_ref()
+            .map(|m| m.text.as_str())
+            .unwrap_or(self.module);
+        if let Some(id) = self.types.declared(module, &q.name.text) {
+            return Some(id);
+        }
+        // The library's types [9].
+        if q.module.as_ref().is_none_or(|m| m.text == "std") {
+            let key = match q.name.text.as_str() {
+                "String" => {
+                    let ch = *self.types.interned.get("char")?;
+                    format!("refarrayof{}", ch.0)
+                }
+                "File" => "File".to_owned(),
+                "Version" | "Round" => "fixed(36,0)".to_owned(),
+                _ => return None,
+            };
+            return self.types.interned.get(&key).copied();
+        }
+        None
+    }
+}
+
 /// Builds types from their syntax, interning as it goes.
 struct Builder<'a, 'd> {
     module: &'a str,

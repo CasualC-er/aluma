@@ -1,0 +1,4 @@
+# name: a private record field is reachable only in its own module
+# source: documentation/language_reference.md:4.1
+mode = compile-error
+main = Main.alm

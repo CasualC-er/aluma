@@ -25,7 +25,10 @@ allow it: `const Size is 10;` and a parameter named `Size` coexist, the paramete
 winning inside its procedure. The alternative — making it an error — is also defensible,
 and `style_guide.md` may have a view. A test pins the current behaviour
 (`resolve.rs::a_parameter_or_local_shadows_a_module_name_inside_its_procedure`), so
-changing it is a one-line change plus that test.
+changing it is a one-line change plus that test. 
+
+***Answer***: you may not redeclare module scoped values, since diffrentiation becomes undignified 
+
 
 ## 3. A local may not repeat a parameter's name
 

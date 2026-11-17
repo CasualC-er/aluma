@@ -154,6 +154,21 @@ enumerate those, and rows are added here as each is implemented.
 | the predefined exceptions are in scope everywhere [7.5] | `library.rs::the_predefined_exceptions_are_in_scope`, `resolve.rs::an_exception_is_not_a_value_and_a_value_is_not_an_exception` | tested |
 | named number types' tag rules in expressions | — | todo |
 
+## Expressions [6], [7.1], [10] — Phase 2
+
+| Rule | Test | Status |
+|---|---|---|
+| a field must exist on the record, and a `ref` is followed | `check.rs::a_field_must_exist_on_the_record`, `check.rs::a_ref_is_followed_to_select_a_field` | tested |
+| only a record has fields; only an array is indexed | `check.rs::only_a_record_has_fields_and_only_an_array_is_indexed`, `check.rs::indexing_gives_the_element_type` | tested |
+| a private field is reachable only in its declaring module [4.1] | `check.rs::a_private_field_is_reachable_only_in_its_own_module`, `check.rs::a_visible_field_of_another_modules_record_is_fine`, `tests/conformance/check-private-field` | tested |
+| `=` only where [7.1] defines it, and on one type [3.5] | `check.rs::equality_is_rejected_where_the_spec_forbids_it`, `check.rs::equality_is_allowed_on_reference_free_values`, `check.rs::equality_needs_two_values_of_one_type`, `tests/conformance/check-equality-and-identity` | tested |
+| `~` only on references, mailboxes and views [7.1] | `check.rs::identity_is_rejected_where_the_spec_forbids_it`, `check.rs::identity_is_allowed_on_references_mailboxes_and_views`, `tests/conformance/check-equality-and-identity` | tested |
+| `and`, `or`, `not` and the conditions of `if` and `while` are `bool` | `check.rs::a_condition_must_be_a_bool`, `check.rs::a_bool_condition_is_accepted_in_every_form` | tested |
+| calls: argument count, types, and the exact match of a procedure parameter [7.2] | — | todo |
+| `void` required and forbidden [5] | — | todo |
+| the assignment rules of [7.4], `rounded`, and single rounding | — | todo |
+| selectors on a call result [6] | — | todo (needs call result types) |
+
 ## Other semantics [4.2]–[4.4], [7] — Phase 2
 
 Rows are added as each rule is implemented, with its negative test. The enumeration to

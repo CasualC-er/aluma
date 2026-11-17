@@ -1,0 +1,15 @@
+# [4.1]: "A record field is visible unless its declaration starts with `private`: a
+# private field can be read and assigned only in the module that declares the record
+# type, and a use anywhere else is a compile error. Other modules can still hold, pass,
+# copy and compare whole records with private fields."
+import Bank;
+
+proc start()
+  var a: ref Bank::Account;
+  var s: String;
+  var n: int;
+begin
+  s := a.name;            # a visible field is fine
+  n := a.balance;         #!error: is a private field of a record declared in `Bank`
+  a.balance := 0;         #!error: is a private field of a record declared in `Bank`
+end;

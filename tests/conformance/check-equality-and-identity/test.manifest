@@ -1,0 +1,4 @@
+# name: where `=` and `~` are defined
+# source: documentation/language_reference.md:7.1
+mode = compile-error
+main = Compare.alm

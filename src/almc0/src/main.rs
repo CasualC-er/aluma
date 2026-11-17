@@ -31,7 +31,7 @@ use std::process::ExitCode;
 
 use alm_core::diag::{Diagnostics, SourceMap};
 use alm_core::options::Options;
-use almc0::{consts::evaluate, load::load, resolve::resolve, types::build};
+use almc0::{check::check, consts::evaluate, load::load, resolve::resolve, types::build};
 
 fn main() -> ExitCode {
     let argv: Vec<String> = std::env::args().skip(1).collect();
@@ -69,10 +69,13 @@ fn main() -> ExitCode {
     // names that are missing because the parser could not read them, which buries the
     // real mistake under noise.
     if !diags.has_errors() {
-        let _symbols = resolve(&program, &mut diags);
+        let symbols = resolve(&program, &mut diags);
         if !diags.has_errors() {
             let consts = evaluate(&program, &mut diags);
-            let _types = build(&program, &consts, &mut diags);
+            let types = build(&program, &consts, &mut diags);
+            if !diags.has_errors() {
+                check(&program, &symbols, &types, &consts, &mut diags);
+            }
         }
     }
 

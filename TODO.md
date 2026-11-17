@@ -74,7 +74,7 @@ is what makes "alongside" checkable.
 - [x] Import graph: not transitive, no self-import, acyclic with the cycle named in the error
 - [x] One flat namespace per module; imported module names occupy it [4.1]
 - [x] `std` auto-import; shadowing by top-level, parameter and local declarations; the unhidable name list; `std::name` always reaches the library [4.1]
-- [ ] `private` on declarations and record fields; cross-module errors; private types usable in visible signatures [4.1] — *declarations done; record fields and signature rules need the type graph*
+- [x] `private` on declarations and record fields; cross-module errors; private types usable in visible signatures [4.1]
 - [x] Declaration-before-use; `also` groups and their rules [4.3]
 - [x] By-value containment cycles and alias loops in type groups, errors naming the cycle [4.3]
 - [x] Name-equivalence type identity; every `record` its own type; `ref` nullable [3.5, 7.1]
@@ -85,7 +85,7 @@ is what makes "alongside" checkable.
 - [ ] The rounding-step set and the single-rounding special case (syntactic) [7.4]
 - [ ] `divide`/`rescale` with and without a mode; the six rounding modes [7.4]
 - [ ] Named number types and tags: `+ -` and comparison rules, everything else untagged, assignment and argument rules [7.4]
-- [x] `=` only on reference-free values; `~` only on refs/mailboxes/views [7.1] — *the type rules; the expression checks that use them come with type checking*
+- [x] `=` only on reference-free values; `~` only on refs/mailboxes/views [7.1]
 - [ ] Parameter rules: all by reference, variable arguments match exactly, non-variable arguments become temporaries [7.2]
 - [ ] Procedure parameters: `proc(T,...):T` types, exact match, second-class [7.2]
 - [ ] Statement checks: `void` required and forbidden cases, `exit`/`next` inside `while` only, `defer` not inside `while`, nameless handler last [5]

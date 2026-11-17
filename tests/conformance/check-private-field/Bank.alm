@@ -1,0 +1,10 @@
+type Account is record
+  name: String;
+  private balance: int;
+end;
+
+# Inside the declaring module the field is reachable, which this module shows.
+proc credit(a: ref Account, n: int)
+begin
+  a.balance := a.balance + n;
+end;

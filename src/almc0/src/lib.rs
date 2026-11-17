@@ -3,6 +3,7 @@
 //! Bracketed section numbers point into `documentation/language_reference.md`.
 
 pub mod ast;
+pub mod check;
 pub mod consts;
 pub mod lex;
 pub mod library;

@@ -1,0 +1,25 @@
+# [7.1]: "`=` compares values. It is defined on `int`, `bool`, `char`, `fixed`, and on
+# records and arrays that contain no references, mailboxes, replies, views, publishers,
+# tasks or files. It is not defined on those types."
+#
+# "`~` is defined only on references, mailboxes and views (and `nil`). It is true when
+# both sides are the same object."
+type Point is record x: int; y: int; end;
+type Cell is record value: int; link: ref Cell; end;
+
+proc start()
+  var p: Point;
+  var q: Point;
+  var c: ref Cell;
+  var d: ref Cell;
+  var n: int;
+  var same: bool;
+begin
+  same := n = 1;          # a number
+  same := p = q;          # a record with no references in it
+  same := c ~ d;          # two references
+  same := c ~ nil;        # a reference and nil
+
+  same := c = d;          #!error: `=` is not defined on
+  same := n ~ 1;          #!error: is not a reference, a mailbox or a view
+end;
