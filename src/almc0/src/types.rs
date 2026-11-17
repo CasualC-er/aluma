@@ -284,7 +284,12 @@ impl Types {
 }
 
 /// Build the program's type graph.
-pub fn build(loaded: &Loaded, consts: &Consts, diags: &mut Diagnostics) -> Types {
+pub fn build(
+    loaded: &Loaded,
+    consts: &Consts,
+    options: &alm_core::options::Options,
+    diags: &mut Diagnostics,
+) -> Types {
     let mut types = Types::default();
 
     // The predefined types first, so that their ids are stable and small.
@@ -336,6 +341,7 @@ pub fn build(loaded: &Loaded, consts: &Consts, diags: &mut Diagnostics) -> Types
                 module,
                 types: &mut types,
                 consts,
+                options,
                 diags,
             };
             builder.build(ty)
@@ -355,6 +361,7 @@ pub fn build(loaded: &Loaded, consts: &Consts, diags: &mut Diagnostics) -> Types
             module: &m.name,
             types: &mut types,
             consts,
+            options,
             diags,
         };
         for decl in &program.decls {
@@ -473,6 +480,7 @@ struct Builder<'a, 'd> {
     module: &'a str,
     types: &'a mut Types,
     consts: &'a Consts,
+    options: &'a alm_core::options::Options,
     diags: &'d mut Diagnostics,
 }
 
@@ -598,13 +606,14 @@ impl Builder<'_, '_> {
         // program could notice: the bound below is about the *representation* of a
         // scale, which is a `u32`. Casting an i64 straight to u32 wrapped, so
         // `fixed(5000000000, 5000000000)` became a narrow type rather than an error.
-        const MAX_DIGITS: i64 = 1_000_000;
-        if precision > MAX_DIGITS {
+        let max = self.options.max_digits as i64;
+        if precision > max {
             self.diags.error(
                 span,
                 format!(
-                    "this compiler handles a `fixed` precision up to {MAX_DIGITS} \
-                     digits, and this one asks for {precision}"
+                    "this compiler accepts a `fixed` precision up to {max} digits, and \
+                     this one asks for {precision}; raise `--max-digits` if you need \
+                     more ([7.4] sets no limit of its own)"
                 ),
             );
             return self.types.add(TypeKind::Error);
@@ -858,7 +867,8 @@ mod tests {
                 .collect::<Vec<_>>()
         );
         let consts = crate::consts::evaluate(&loaded, &mut diags);
-        let types = build(&loaded, &consts, &mut diags);
+        let options = alm_core::options::Options::default();
+        let types = build(&loaded, &consts, &options, &mut diags);
         let rendered = diags.items().iter().map(|d| d.render(&sources)).collect();
         let _ = std::fs::remove_dir_all(&dir);
         (types, rendered)
@@ -1038,10 +1048,14 @@ mod tests {
         assert!(errors("type T is fixed(4, 5);\n")[0].contains("0 <= s <= p"));
         // A precision past what a `u32` scale can represent is refused rather than
         // wrapping into a narrow type.
+        let too_wide = errors("type T is fixed(5000000000, 5000000000);\n");
         assert!(
-            errors("type T is fixed(5000000000, 5000000000);\n")[0]
-                .contains("handles a `fixed` precision up to")
+            too_wide[0].contains("accepts a `fixed` precision up to"),
+            "{too_wide:?}"
         );
+        // The limit is the compiler's, not the language's, so the message says how to
+        // raise it (QUESTIONS.md 6).
+        assert!(too_wide[0].contains("raise `--max-digits`"), "{too_wide:?}");
         assert!(errors("type T is fixed(4, _1);\n")[0].contains("0 <= s <= p"));
         // A non-constant, and a constant of the wrong kind.
         assert!(errors("type T is fixed(true, 0);\n")[0].contains("must be an `int`"));

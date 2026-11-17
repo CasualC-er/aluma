@@ -72,7 +72,7 @@ fn main() -> ExitCode {
         let symbols = resolve(&program, &mut diags);
         if !diags.has_errors() {
             let consts = evaluate(&program, &mut diags);
-            let types = build(&program, &consts, &mut diags);
+            let types = build(&program, &consts, &options, &mut diags);
             if !diags.has_errors() {
                 check(&program, &symbols, &types, &consts, &mut diags);
             }

@@ -17,6 +17,10 @@ committing to it rather than opening a PR per phase, since you merged #1 yoursel
 did not want to leave a trail of unmerged branches. Say if you would rather have one
 branch per phase, or a PR now.
 
+***Answer***: open a pr after phase 2 is complete.
+
+*Done*: noted. I will open it when the Phase 2 checklist in TODO.md is clear.
+
 ## 2. A local may shadow a module-level name
 
 [4.1] says a parameter or local hides a *library* name "in the same way" as a top-level
@@ -27,14 +31,24 @@ and `style_guide.md` may have a view. A test pins the current behaviour
 (`resolve.rs::a_parameter_or_local_shadows_a_module_name_inside_its_procedure`), so
 changing it is a one-line change plus that test. 
 
-***Answer***: you may not redeclare module scoped values, since diffrentiation becomes undignified 
+***Answer***: You may not redeclare module scoped values, since diffrentiation becomes undignified
+
+*Done*: a parameter or local that repeats a module-level name — including an imported
+module's name, which occupies the namespace [4.1] — is now an error naming the
+declaration it clashes with. A *library* name may still be hidden, which [4.1] allows
+in so many words, except for the unhidable list. Pinned by
+`resolve.rs::a_parameter_or_local_may_not_repeat_a_module_level_name`.
 
 
 ## 3. A local may not repeat a parameter's name
 
 Nothing in the reference says whether `proc f(a: int) var a: int;` is an error. I report
 it, on the grounds that it can only be a mistake. Tell me if you would rather it were
-allowed (the local shadowing the parameter).
+allowed (the local shadowing the parameter). 
+
+***Answer***: Correct Call
+
+*Done*: unchanged, now with your reasoning recorded alongside it.
 
 ## 4. A procedure call is not a constant expression
 
@@ -56,6 +70,7 @@ A division is a rounding step, and losing a non-zero digit at one raises
 it and suggests writing the value out or using `divide(a, b, k, mode)`. I believe that
 follows from the spec rather than being a choice, but it is the kind of thing worth a
 second opinion, since the alternative reading is that a constant simply rounds.
+***Answer***: Correct.
 
 ## 6. Type graph decisions (for the record, no answer needed unless you disagree)
 
@@ -67,7 +82,32 @@ second opinion, since the alternative reading is that a constant simply rounds.
   limit", and nothing a program can notice is limited — the bound exists because a
   scale is held in a `u32`, and casting an `i64` constant straight into one wrapped
   (`fixed(5000000000, 5000000000)` became a narrow type). The message says it is this
-  compiler's limit, not the language's.
+  compiler's limit, not the language's. 
+  
+  [**Critique**]: this should be overrideable and set as a compiler option, and rust allows u128s which would work if we did it in advance.
+
+  *Done, half of it*: it is now the `--max-digits` option, default 1,000,000, and the
+  diagnostic names it ("raise `--max-digits` if you need more ([7.4] sets no limit of
+  its own)"). [8.9] permits this: "the option names and defaults below are the standard
+  ones; an implementation may offer others". It is deliberately **not** part of the
+  program's identity, unlike [8.9]'s own options: it decides whether the program
+  compiles, not how it runs, so a replay does not need it and two binaries built with
+  different limits are the same program.
+
+  *Not done — the `u128` half, and I think it should not be*: the option is capped at
+  `u32::MAX` because a *scale* is held in a `u32`. Widening that to `u128` would not
+  raise the real ceiling, because the ceiling is memory, not the counter. A scale is a
+  count of fractional digits, and the digits have to exist: at `u32::MAX` fractional
+  digits one number needs about half a gibibyte of limbs, and a `u128` scale would
+  describe numbers needing more memory than addressable. Meanwhile every `Decimal` and
+  every `fixed` type in the compiler would carry 16 bytes of scale instead of 4, on a
+  structure that the IR serialises and that Phase 10 compares byte for byte.
+
+  If the worry is that `u32` is visible in the language, it is not: `--max-digits`
+  defaults to a million, and a program asking for more gets a diagnostic naming the
+  option rather than a wrapped type. Say the word if you still want `u128` and I will
+  change it — it is a type alias and a handful of casts.
+
 - An import chain deeper than 400 modules is refused, for the same reason [8.5.2] makes
   `StackOverflow` a checked exception rather than letting the machine stack decide: the
   loader recurses per module, and a 20,000-module chain aborted the compiler. A

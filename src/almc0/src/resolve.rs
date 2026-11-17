@@ -492,6 +492,26 @@ impl Resolver<'_, '_> {
             );
             return;
         }
+        // A parameter or local may hide a *library* name [4.1], but not one of the
+        // module's own: a reader cannot then tell which `Size` a use means, and which
+        // one wins depends on where the use sits. The reference does not settle this
+        // (QUESTIONS.md 2); it is a project decision.
+        if let Some(module_level) = self.here().by_name.get(&name.text) {
+            let module_span = module_level.span;
+            let described = module_level.kind.describe();
+            self.diags.push(
+                Diagnostic::error(
+                    name.span,
+                    format!(
+                        "`{}` is already {described} of `{}`, so a {what} cannot be named \
+                         it too",
+                        name.text, self.module
+                    ),
+                )
+                .note(module_span, format!("`{}` is declared here", name.text)),
+            );
+            return;
+        }
         scope.names.insert(name.text.clone(), name.span);
     }
 
@@ -1219,15 +1239,34 @@ mod tests {
     }
 
     #[test]
-    fn a_parameter_or_local_shadows_a_module_name_inside_its_procedure() {
-        // The namespace is flat per module, but a procedure's own names come first.
-        assert!(
-            check(
-                "const Size is 10;\n\
-                 proc start(Size: int)\nbegin\n  writeLine(intStr(Size));\nend;\n"
-            )
-            .is_empty()
+    fn a_parameter_or_local_may_not_repeat_a_module_level_name() {
+        // A project decision, not a rule of the reference (QUESTIONS.md 2): a reader
+        // cannot otherwise tell which `Size` a use means, and which one wins depends
+        // on where the use sits.
+        let d = only(
+            "const Size is 10;\nproc start(Size: int)\nbegin\nend;\n",
+            "is already a constant of `Main`",
         );
+        assert!(d.contains("note:"), "point at the declaration: {d}");
+        only(
+            "type Node is int;\nproc start()\n  var Node: int;\nbegin\nend;\n",
+            "is already a type of `Main`",
+        );
+        // An imported module's name occupies the namespace too [4.1].
+        let d = check_modules(&[
+            (
+                "Main.alm",
+                "import Dep;\nproc start(Dep: int)\nbegin\nend;\n",
+            ),
+            ("Dep.alm", "const X is 1;\n"),
+        ]);
+        assert_eq!(d.len(), 1, "{d:#?}");
+        assert!(
+            d[0].contains("is already an imported module of `Main`"),
+            "{d:?}"
+        );
+        // A *library* name may still be hidden, which [4.1] allows explicitly.
+        assert!(check("proc start(intStr: int)\nbegin\nend;\n").is_empty());
     }
 
     #[test]

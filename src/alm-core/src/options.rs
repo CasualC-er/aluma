@@ -62,6 +62,18 @@ pub struct Options {
     pub handles: u64,
     /// Seed for `random` [9.6]. See the note above.
     pub seed: Seed,
+    /// Most digits a `fixed(p, s)` type may declare.
+    ///
+    /// **Not one of [8.9]'s options**, which that section permits: "an implementation
+    /// may offer others". [7.4] says `p` has "no upper limit", and nothing a program
+    /// can observe is limited by this — it bounds what the *compiler* accepts, as
+    /// `--depth` bounds nesting, and the diagnostic says so.
+    ///
+    /// Capped at `u32::MAX`, because a scale is held in a `u32`. Widening that would
+    /// not raise the real ceiling: a single value with 4×10⁹ fractional digits needs
+    /// about half a gibibyte of limbs, so memory runs out long before the counter
+    /// does. See QUESTIONS.md 6.
+    pub max_digits: u64,
     /// Directories searched for modules, in order [4.1]. Not part of identity.
     pub path: Vec<String>,
 }
@@ -81,6 +93,7 @@ impl Default for Options {
             socket_buffer: 65_536,
             handles: 1_024,
             seed: Seed::FromOs,
+            max_digits: 1_000_000,
             path: Vec::new(),
         }
     }
@@ -150,7 +163,10 @@ impl Options {
                 continue;
             }
 
-            let spec = NUMERIC.iter().find(|s| s.name == name);
+            let spec = NUMERIC
+                .iter()
+                .chain(COMPILER_LIMITS.iter())
+                .find(|s| s.name == name);
             let is_known = spec.is_some() || name == "--seed" || name == "--path";
             if !is_known {
                 return Err(OptionError::Unknown(name));
@@ -301,7 +317,21 @@ const NUMERIC: &[NumericOption] = &[
     },
 ];
 
+/// Options that bound what the compiler accepts rather than how a program runs.
+///
+/// Parsed like the others but **not part of the program's identity**: a replay
+/// reproduces a run, and these decide only whether the program compiled at all.
+/// Recording one would make two identical binaries look different because one was
+/// compiled with a laxer limit.
+const COMPILER_LIMITS: &[NumericOption] = &[NumericOption {
+    name: "--max-digits",
+    min: 1,
+    get: |o| o.max_digits,
+    set: |o, n| o.max_digits = n.min(u32::MAX as u64),
+}];
+
 const KNOWN_NAMES: &[&str] = &[
+    "--max-digits",
     "--steps",
     "--strict-steps",
     "--memory",
@@ -408,6 +438,21 @@ mod tests {
         let (a, _) = Options::parse(["--steps=7", "--depth", "9"]).unwrap();
         let (b, _) = Options::parse(["--depth=9", "--steps", "7"]).unwrap();
         assert_eq!(a.identity(), b.identity());
+    }
+
+    #[test]
+    fn a_compiler_limit_is_parsed_but_is_not_part_of_identity() {
+        // `--max-digits` bounds what the compiler accepts, not how a program runs, so
+        // a replay does not need it: two binaries compiled with different limits are
+        // the same program.
+        let (o, _) = Options::parse(["--max-digits", "50"]).unwrap();
+        assert_eq!(o.max_digits, 50);
+        assert_eq!(Options::default().max_digits, 1_000_000);
+        assert!(!o.identity().contains("max-digits"));
+        assert_eq!(o.identity(), Options::default().identity());
+        // Capped at what a `u32` scale can hold; see the field's documentation.
+        let (o, _) = Options::parse(["--max-digits=99999999999"]).unwrap();
+        assert_eq!(o.max_digits, u32::MAX as u64);
     }
 
     #[test]

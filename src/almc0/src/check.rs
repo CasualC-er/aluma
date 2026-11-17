@@ -468,7 +468,8 @@ mod tests {
         );
         let symbols = crate::resolve::resolve(&loaded, &mut diags);
         let consts = crate::consts::evaluate(&loaded, &mut diags);
-        let types = crate::types::build(&loaded, &consts, &mut diags);
+        let options = alm_core::options::Options::default();
+        let types = crate::types::build(&loaded, &consts, &options, &mut diags);
         assert!(
             !diags.has_errors(),
             "the test source must resolve: {:?}",
