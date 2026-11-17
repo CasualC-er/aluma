@@ -13,6 +13,7 @@ An entry here is **not** a licence to diverge. It is a record that a divergence 
 | A-001 | Hexadecimal digits in a `fixed` literal | decided |
 | A-002 | `--seed` is not fixed at compile time | decided |
 | A-003 | Which raise point a bare re-`raise` reports | decided |
+| A-004 | A procedure call is not a constant expression | decided |
 
 ---
 
@@ -106,3 +107,51 @@ original raise point and chain.
 
 **Implemented in.** `documentation/ir.md` §6.3, ADR-006. Phase 3 lowering and Phase 4
 report formatting.
+
+---
+
+## A-004 — A procedure call is not a constant expression
+
+**Where.** [4] ("Constants are compile-time constant expressions"), the grammar of [10],
+and the three places that require a constant *argument*: `strFixed(s, k)` [9.2],
+`divide(a, b, k)` and `rescale(x, k)` [7.4], and `power`'s exponent [9.5].
+
+**The gap.** The grammar puts calls inside `expr`, so `const Limit is power(2, 10);`
+parses. [4] says a constant is a "compile-time constant expression" without saying
+whether a call is one. The three requirements above are about arguments being constant,
+not about calls folding, so nothing settles it either way.
+
+**Decision.** A procedure call is **not** a constant expression. Every call in a
+constant position is a compile error, including a call of a library procedure whose
+arguments are all constants.
+
+**Why.** A constant must be determined by the program text alone. If a call could
+appear, a constant's value would come from *executing* something — the library's
+semantics, or a user procedure's body — and the compiler would have to agree with the
+runtime about that execution to agree about the constant. Two consequences follow, and
+both are worse than the inconvenience this rule causes:
+
+- A constant would depend on run-time behaviour to be known at compile time, which is
+  the opposite of what "compile-time constant" means. Sizes [4] and the `p` and `s` of
+  a `fixed` type [7.4] are constants precisely so that a type is fixed by the source.
+- `almc` and `almc0` are compared on byte-identical IR (ADR-013.1), so any folding rule
+  is a rule both must implement identically. A folding rule that reaches into the
+  library makes the IR depend on two implementations of the library agreeing, which is
+  a far larger surface than the front end the differential is meant to cover.
+
+**What it costs.** `type Buf is array [power(2, 10)] of int;` must be written with a
+named constant: `const Size is 1024; type Buf is array [Size] of int;`. No example in
+the reference, the guide or the style guide puts a call in a constant — the only two
+constant declarations in all three documents are `const Size is 100;` and
+`const Keep is 64;` — so nothing existing is affected.
+
+**The direction is deliberate.** Permitting more folding later breaks no program that
+can be written today; retracting permission would break every program that relied on
+it. If a case for folding a named set of pure built-ins ever arises, it is an amendment
+of its own with that set written out.
+
+**Consequence for the reference.** [4] should say that a constant expression is built
+from literals, named constants, enumeration names and operators, and that it contains no
+calls.
+
+**Implemented in.** `almc0::consts` rejects every call, naming the rule.

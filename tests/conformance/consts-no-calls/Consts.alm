@@ -1,0 +1,18 @@
+# Amendment A-004: a procedure call is not a constant expression. A constant must be
+# determined by the program text alone; a call's value would come from executing
+# something, so the compiler would have to agree with the runtime about that execution
+# in order to agree about the constant.
+#
+# What a constant may be built from comes first, so this test pins that too.
+const Size is 100;
+const Doubled is Size * 2;
+enum Get, Put, Delete;
+const Last is Delete;
+const Scaled is 1v50 + 0v25;
+
+type Buf is array [Doubled] of int;
+type Money is fixed(Size div 10, 2);
+
+# And what it may not.
+const Computed is power(2, 10);     #!error: cannot call a procedure
+const Hashed is hashString("key");  #!error: cannot call a procedure

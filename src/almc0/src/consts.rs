@@ -15,13 +15,16 @@
 //!
 //! ## What is not constant
 //!
-//! A procedure call is rejected. The reference says constants are "compile-time
-//! constant expressions" without saying which calls, if any, fold — `strFixed`'s `k`
-//! and `power`'s exponent are described as constant expressions, which is about their
-//! *arguments*, not about the calls being foldable. Rejecting them is the choice that
-//! cannot be wrong later: allowing a call and then finding the spec meant otherwise
-//! would break programs, whereas allowing more folding later breaks nothing. Logged in
-//! QUESTIONS.md.
+//! A procedure call is rejected, which is **amendment A-004**: the reference does not
+//! settle it, and the decision is that a constant must be determined by the program
+//! text alone. If a call could appear, a constant's value would come from executing
+//! something — the library's semantics or a procedure's body — so the compiler would
+//! have to agree with the runtime about that execution in order to agree about the
+//! constant, and the IR the Phase 10 differential compares would depend on two
+//! implementations of the library agreeing rather than on the front end.
+//!
+//! The cost is that `array [power(2, 10)] of int` must be written with a named
+//! constant. No example in the three documents is affected.
 
 use std::collections::BTreeMap;
 
@@ -193,8 +196,9 @@ impl Evaluator<'_, '_> {
             ExprKind::Call { call, .. } => {
                 self.error(
                     call.span,
-                    "a constant expression cannot call a procedure; it is evaluated at \
-                     compile time [4]",
+                    "a constant expression cannot call a procedure: a constant must be \
+                     determined by the program text alone, and a call's value would \
+                     come from executing something (amendment A-004)",
                 );
                 None
             }

@@ -130,6 +130,7 @@ enumerate those, and rows are added here as each is implemented.
 | a zero divisor | `consts.rs::div_and_mod_are_euclidean`, `decimal.rs::a_zero_divisor_is_reported_rather_than_panicking` | tested |
 | `enum A, B, C` declares the ints 0, 1, 2 | `consts.rs::a_constant_may_name_an_earlier_constant_or_an_enum_name` | tested |
 | a constant may name an earlier constant, including another module's | `consts.rs::a_constant_of_another_module` | tested |
+| a constant expression contains no calls (amendment A-004) | `consts.rs::what_is_not_a_constant`, `tests/conformance/consts-no-calls` | tested |
 | the `rounded` assignment rules, and single rounding | — | todo |
 | a value fits a `fixed(p, s)`'s integer part | `decimal.rs::digit_counts_are_what_an_assignment_checks` | tested |
 

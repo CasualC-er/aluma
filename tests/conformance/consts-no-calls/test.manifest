@@ -1,0 +1,4 @@
+# name: a constant expression contains no calls
+# source: documentation/amendments.md A-004
+mode = compile-error
+main = Consts.alm

@@ -62,6 +62,15 @@ the reference meant otherwise would break programs that rely on it, while allowi
 folding later breaks nothing. If you want `power(2, 10)` or `strFixed("1.5", 2)` to fold,
 say so and it is a contained change in `consts.rs`.
 
+***Answer***: no — constants would have to rely on running data that way, which is a
+massive problem.
+
+*Done*: unchanged in behaviour, but promoted from my choice to a language rule, because
+your reason is the general one: a constant whose value comes from executing something is
+not fixed by the program text. Written up as amendment A-004 in
+`documentation/amendments.md`, which is where `almc` will have to match it in Phase 10,
+and the diagnostic now gives the reason rather than only the rule.
+
 ## 5. An inexact constant division is rejected outright
 
 A division is a rounding step, and losing a non-zero digit at one raises
