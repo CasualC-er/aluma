@@ -76,13 +76,13 @@ is what makes "alongside" checkable.
 - [x] One flat namespace per module; imported module names occupy it [4.1]
 - [x] `std` auto-import; shadowing by top-level, parameter and local declarations; the unhidable name list; `std::name` always reaches the library [4.1]
 - [x] `private` on declarations and record fields; cross-module errors [4.1]
-- [ ] A private type may appear in the signature of a visible procedure: another module can pass its values around but cannot name the type [4.1] — *nothing implements or tests this yet; it was wrongly ticked with the line above*
+- [x] A private type may appear in the signature of a visible procedure: another module can pass its values around but cannot name the type [4.1] — the privacy check on a qualified name gives the second half, and nothing rejects the first; both now pinned by tests
 - [x] Declaration-before-use; `also` groups and their rules [4.3]
 - [x] By-value containment cycles and alias loops in type groups, errors naming the cycle [4.3]
 - [x] Name-equivalence type identity; every `record` its own type [3.5, 7.1] — *`ref` nullability is in the zero values; that `nil` may be assigned to any `ref` is checked when the assignment rules land*
 - [x] Zero values for every type [3.3]
 - [x] Constant expression evaluator: `const`, `enum`, sizes, `fixed(p,s)` arguments, unbounded decimal — *calls do not fold; see QUESTIONS.md 4*
-- [ ] `fixed` scale rules: `+ -` max scale, `*` sum, `/` sum, `int` as scale 0, `int/int` rejected [7.4]
+- [x] `fixed` scale rules: `+ -` max scale, `*` sum, `/` sum, `int` as scale 0, `int/int` rejected [7.4] — *an intermediate carries a scale and no precision, because [7.4] makes intermediates exact and checks precision only at an assignment*
 - [ ] Assignment checks: `Overflow`, `LostPrecision`, `rounded` [7.4]
 - [ ] The rounding-step set and the single-rounding special case (syntactic) [7.4]
 - [ ] `divide`/`rescale` with and without a mode; the six rounding modes [7.4]

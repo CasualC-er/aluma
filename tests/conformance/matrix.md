@@ -165,6 +165,12 @@ enumerate those, and rows are added here as each is implemented.
 | `=` only where [7.1] defines it, and on one type [3.5] | `check.rs::equality_is_rejected_where_the_spec_forbids_it`, `check.rs::equality_is_allowed_on_reference_free_values`, `check.rs::equality_needs_two_values_of_one_type`, `tests/conformance/check-equality-and-identity` | tested |
 | `~` only on references, mailboxes and views [7.1] | `check.rs::identity_is_rejected_where_the_spec_forbids_it`, `check.rs::identity_is_allowed_on_references_mailboxes_and_views`, `tests/conformance/check-equality-and-identity` | tested |
 | `and`, `or`, `not` and the conditions of `if` and `while` are `bool` | `check.rs::a_condition_must_be_a_bool`, `check.rs::a_bool_condition_is_accepted_in_every_form` | tested |
+| a private type may appear in a visible signature [4.1] | `check.rs::a_private_type_may_appear_in_a_visible_signature`, `tests/conformance/check-private-type-in-signature` | tested |
+| the scale rules of `+ - * /` and `int` as scale 0 [7.4] | `check.rs::the_scale_rules_of_section_seven_four`, `tests/conformance/check-number-rules` | tested |
+| `/` on two `int`s is an error, in an expression as well as a constant [7.4] | `check.rs::slash_on_two_ints_is_rejected_in_an_expression`, `consts.rs::slash_on_two_ints_is_a_compile_error` | tested |
+| `div` and `mod` take two `int` values [7.3] | `check.rs::div_and_mod_take_two_ints` | tested |
+| arithmetic, `_` and ordering need numbers | `check.rs::arithmetic_needs_numbers`, `check.rs::ordering_compares_numbers_or_two_chars` | tested |
+| two numbers compare with `=` whatever their scales [7.4] | `check.rs::two_numbers_compare_with_equals_whatever_their_scales` | tested |
 | calls: argument count, types, and the exact match of a procedure parameter [7.2] | — | todo |
 | `void` required and forbidden [5] | — | todo |
 | the assignment rules of [7.4], `rounded`, and single rounding | — | todo |

@@ -1,0 +1,38 @@
+# [7.4]: "Addition and subtraction are exact, with the larger of the two scales.
+# Multiplication is exact, and the scales add ... An `int` acts as a `fixed` of scale 0
+# when mixed with fixed values. `/` with two `int` operands is a compile error; use
+# `div`. Division `/` gives the quotient at the sum of the two scales."
+type Money is fixed(9, 2);
+
+proc start()
+  var a: Money;
+  var b: Money;
+  var x: fixed(9, 4);
+  var n: int;
+  var c: char;
+  var d: char;
+  var ok: bool;
+begin
+  # Every legal combination, so the test pins what is accepted too.
+  x := a + b;
+  x := a - b;
+  x := a * b;
+  x := a / b;
+  x := a + n;          # an int mixes in as scale 0
+  x := n * a;
+  x := a / n;          # dividing by an int keeps the dividend's scale
+  x := x / 2;
+  n := n + 1;
+  n := n div 2;
+  n := n mod 2;
+  ok := a = x;         # comparison is by value, whatever the scales
+  ok := a < n;
+  ok := c < d;         # two chars order by code point
+
+  n := n / 2;          #!error: use `div`
+  n := a div 2;        #!error: takes two `int` values
+  n := 7 mod a;        #!error: takes two `int` values
+  n := ok + 1;         #!error: `+` works on numbers
+  n := _ok;            #!error: `_` negates a number
+  ok := ok < ok;       #!error: `<` works on numbers
+end;

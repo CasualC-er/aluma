@@ -1,0 +1,16 @@
+# [4.1]: "A private type may appear in the signature of a visible procedure: other
+# modules can pass its values around but cannot name the type."
+private type Handle is record id: int; end;
+
+proc make(n: int): ref Handle
+  var h: ref Handle;
+begin
+  h := new(Handle);
+  h.id := n;
+  return h;
+end;
+
+proc idOf(h: ref Handle): int
+begin
+  return h.id;
+end;

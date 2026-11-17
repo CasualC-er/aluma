@@ -1,0 +1,4 @@
+# name: the number rules of [7.3] and [7.4] in expressions
+# source: documentation/language_reference.md:7.4
+mode = compile-error
+main = Numbers.alm

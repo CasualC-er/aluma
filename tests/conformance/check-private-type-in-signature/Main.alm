@@ -1,0 +1,10 @@
+import Dep;
+
+proc start()
+  var n: int;
+  var h: ref Dep::Handle;   #!error: is private to `Dep`
+begin
+  # Passing the value around without ever naming its type is allowed: the result of
+  # one visible procedure goes straight into another.
+  n := Dep::idOf(Dep::make(7));
+end;

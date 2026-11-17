@@ -34,6 +34,40 @@ use crate::load::Loaded;
 use crate::resolve::{SymbolKind, Symbols};
 use crate::types::{TypeId, TypeKind, Types};
 
+/// What kind of number a value is, for the arithmetic rules of [7.4].
+///
+/// An `int` "acts as a `fixed` of scale 0 when mixed with fixed values", so the two
+/// live in one enum.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Num {
+    Int,
+    /// A decimal of this scale. **No precision**, deliberately: "intermediate results
+    /// of `+`, `-` and `*` are exact however many digits they need; only an assignment
+    /// to a variable of a declared `fixed(p, s)` type is range-checked" [7.4]. An
+    /// intermediate therefore has no `p`, and inventing one would either reject a legal
+    /// expression or claim a bound the language does not have.
+    Fixed {
+        scale: u32,
+    },
+}
+
+impl Num {
+    /// The scale, with an `int` counting as 0 [7.4].
+    const fn scale(self) -> u32 {
+        match self {
+            Num::Int => 0,
+            Num::Fixed { scale } => scale,
+        }
+    }
+
+    const fn describe(self) -> &'static str {
+        match self {
+            Num::Int => "an `int`",
+            Num::Fixed { .. } => "a `fixed` value",
+        }
+    }
+}
+
 /// The type of an expression, or `Unknown` when this part cannot say.
 ///
 /// `Unknown` is not an error: it means "not determined yet", and every check treats it
@@ -42,6 +76,9 @@ use crate::types::{TypeId, TypeKind, Types};
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Typed {
     Known(TypeId),
+    /// A number with no declared type: a literal, or the result of arithmetic. Carries
+    /// its scale, and its tag once [7.4]'s named number types are checked.
+    Number(Num),
     Unknown,
 }
 
@@ -49,7 +86,7 @@ impl Typed {
     fn id(self) -> Option<TypeId> {
         match self {
             Typed::Known(id) => Some(id),
-            Typed::Unknown => None,
+            Typed::Number(_) | Typed::Unknown => None,
         }
     }
 }
@@ -178,8 +215,10 @@ impl Checker<'_, '_> {
         match &e.kind {
             // A literal's type: `int`, `fixed` of its own scale, `char`, `bool`, and a
             // string literal is a `String`, which is `ref array of char` [3.4, 9].
-            ExprKind::Int { .. } => self.predefined("int"),
-            ExprKind::Fixed { .. } => Typed::Unknown,
+            // A literal has no tag [7.4], and a `fixed` literal's scale is the digits
+            // after `v` [2].
+            ExprKind::Int { .. } => Typed::Number(Num::Int),
+            ExprKind::Fixed { scale, .. } => Typed::Number(Num::Fixed { scale: *scale }),
             ExprKind::Char(_) => self.predefined("char"),
             ExprKind::Bool(_) => self.predefined("bool"),
             ExprKind::Str(_) => Typed::Unknown,
@@ -202,7 +241,25 @@ impl Checker<'_, '_> {
                 self.condition(inner, "`not`");
                 self.predefined("bool")
             }
-            ExprKind::Negate(inner) => self.expr(inner),
+            // `_` negates a number and changes nothing else [2, 7.4].
+            ExprKind::Negate(inner) => {
+                let inner_type = self.expr(inner);
+                match self.numeric(inner_type) {
+                    Some(n) => Typed::Number(n),
+                    None => {
+                        if let Some(id) = inner_type.id() {
+                            self.diags.error(
+                                inner.span,
+                                format!(
+                                    "`_` negates a number, and {} is not one [7.4]",
+                                    self.types.describe(id)
+                                ),
+                            );
+                        }
+                        Typed::Unknown
+                    }
+                }
+            }
             ExprKind::Binary { op, left, right } => self.binary(*op, left, right, e.span),
         }
     }
@@ -248,9 +305,140 @@ impl Checker<'_, '_> {
                 }
                 self.predefined("bool")
             }
-            // Ordering, arithmetic and the tag rules need the number rules of [7.4],
-            // which is the next slice.
-            _ => Typed::Unknown,
+            BinOp::Less | BinOp::LessEqual | BinOp::Greater | BinOp::GreaterEqual => {
+                self.ordering(op, l, r, left, right, whole);
+                self.predefined("bool")
+            }
+            BinOp::Add | BinOp::Subtract | BinOp::Multiply | BinOp::Divide => {
+                self.arithmetic(op, l, r, left, right, whole)
+            }
+            BinOp::Div | BinOp::Mod => {
+                self.int_only(op, l, left);
+                self.int_only(op, r, right);
+                Typed::Number(Num::Int)
+            }
+        }
+    }
+
+    /// The numeric view of a type, if it is a number [7.4].
+    fn numeric(&self, t: Typed) -> Option<Num> {
+        match t {
+            Typed::Number(n) => Some(n),
+            Typed::Unknown => None,
+            Typed::Known(id) => match self.types.kind(self.types.underlying(id)) {
+                TypeKind::Int => Some(Num::Int),
+                TypeKind::Fixed { scale, .. } => Some(Num::Fixed { scale: *scale }),
+                _ => None,
+            },
+        }
+    }
+
+    /// Report a side that should be a number but is not. Returns whether it reported.
+    fn want_number(&mut self, op: BinOp, side: Typed, expr: &Expr) -> bool {
+        if self.numeric(side).is_some() || side == Typed::Unknown {
+            return false;
+        }
+        let described = side
+            .id()
+            .map(|id| self.types.describe(id))
+            .unwrap_or_else(|| "this".to_owned());
+        self.diags.error(
+            expr.span,
+            format!(
+                "`{}` works on numbers, and {described} is not one [7.4]",
+                op.text()
+            ),
+        );
+        true
+    }
+
+    /// `div` and `mod` take two `int` values [7.3].
+    fn int_only(&mut self, op: BinOp, side: Typed, expr: &Expr) {
+        match self.numeric(side) {
+            Some(Num::Int) | None => {}
+            Some(other) => {
+                self.diags.error(
+                    expr.span,
+                    format!(
+                        "`{}` takes two `int` values, and this is {} [7.3]; use `/` for \
+                         decimal division",
+                        op.text(),
+                        other.describe()
+                    ),
+                );
+            }
+        }
+    }
+
+    /// `<` `<=` `>` `>=`: numbers of any scales, or two `char` values.
+    fn ordering(&mut self, op: BinOp, l: Typed, r: Typed, left: &Expr, right: &Expr, whole: Span) {
+        // Two `char`s order by code point, which [7.1] allows alongside numbers.
+        let is_char = |t: Typed, s: &Self| {
+            t.id()
+                .is_some_and(|id| matches!(s.types.kind(s.types.underlying(id)), TypeKind::Char))
+        };
+        if is_char(l, self) && is_char(r, self) {
+            return;
+        }
+        if self.want_number(op, l, left) || self.want_number(op, r, right) {
+            return;
+        }
+        let _ = whole;
+    }
+
+    /// `+` `-` `*` `/` and their scale rules [7.4].
+    fn arithmetic(
+        &mut self,
+        op: BinOp,
+        l: Typed,
+        r: Typed,
+        left: &Expr,
+        right: &Expr,
+        whole: Span,
+    ) -> Typed {
+        if self.want_number(op, l, left) || self.want_number(op, r, right) {
+            return Typed::Unknown;
+        }
+        let (Some(a), Some(b)) = (self.numeric(l), self.numeric(r)) else {
+            return Typed::Unknown;
+        };
+        match op {
+            // "Addition and subtraction are exact, with the larger of the two scales."
+            // Two `int`s stay an `int`; an `int` mixed with a `fixed` is scale 0.
+            BinOp::Add | BinOp::Subtract => {
+                if a == Num::Int && b == Num::Int {
+                    Typed::Number(Num::Int)
+                } else {
+                    Typed::Number(Num::Fixed {
+                        scale: a.scale().max(b.scale()),
+                    })
+                }
+            }
+            // "Multiplication is exact, and the scales add."
+            BinOp::Multiply => {
+                if a == Num::Int && b == Num::Int {
+                    Typed::Number(Num::Int)
+                } else {
+                    Typed::Number(Num::Fixed {
+                        scale: a.scale().saturating_add(b.scale()),
+                    })
+                }
+            }
+            // "`/` with two `int` operands is a compile error; use `div`." Otherwise
+            // "division `/` gives the quotient at the sum of the two scales".
+            BinOp::Divide => {
+                if a == Num::Int && b == Num::Int {
+                    self.diags.error(
+                        whole,
+                        "`/` with two `int` operands is a compile error; use `div` [7.4]",
+                    );
+                    return Typed::Unknown;
+                }
+                Typed::Number(Num::Fixed {
+                    scale: a.scale().saturating_add(b.scale()),
+                })
+            }
+            _ => unreachable!("only the four arithmetic operators reach here"),
         }
     }
 
@@ -258,6 +446,11 @@ impl Checker<'_, '_> {
     /// that contain no references, mailboxes, replies, views, publishers, tasks or
     /// files. It is not defined on those types." [7.1]
     fn check_equality(&mut self, l: Typed, r: Typed, left: &Expr, right: &Expr, whole: Span) {
+        // Two numbers compare by value whatever their scales [7.4], so neither the
+        // equality blocker nor the same-type rule below applies to them.
+        if self.numeric(l).is_some() && self.numeric(r).is_some() {
+            return;
+        }
         for (side, expr) in [(l, left), (r, right)] {
             let Some(id) = side.id() else { continue };
             if let Some(blocker) = self.types.equality_blocker(id) {
@@ -605,6 +798,28 @@ mod tests {
     }
 
     #[test]
+    fn a_private_type_may_appear_in_a_visible_signature() {
+        // [4.1]: "A private type may appear in the signature of a visible procedure:
+        // other modules can pass its values around but cannot name the type." The
+        // permissive half is the part worth a test — nothing may reject it.
+        assert!(
+            check_modules(&[
+                (
+                    "Main.alm",
+                    "import Dep;\nproc start()\n  var n: int;\nbegin\n                       n := Dep::idOf(Dep::make(7));\nend;\n",
+                ),
+                (
+                    "Dep.alm",
+                    "private type Handle is record id: int; end;\n\
+                     proc make(n: int): ref Handle\n  var h: ref Handle;\nbegin\n                       h := new(Handle);\n  h.id := n;\n  return h;\nend;\n\
+                     proc idOf(h: ref Handle): int\nbegin\n  return h.id;\nend;\n",
+                ),
+            ])
+            .is_empty()
+        );
+    }
+
+    #[test]
     fn equality_is_rejected_where_the_spec_forbids_it() {
         // [7.1]: not defined on references, mailboxes, replies, views, publishers,
         // tasks or files, nor on a record or array containing one.
@@ -674,6 +889,101 @@ mod tests {
                  var v: view of R;\n  var same: bool;\nbegin\n  \
                  same := a ~ b;\n  same := a ~ nil;\n  same := m ~ m;\n  same := v ~ v;\n\
                  end;\n"
+            )
+            .is_empty()
+        );
+    }
+
+    #[test]
+    fn the_scale_rules_of_section_seven_four() {
+        // "Addition and subtraction are exact, with the larger of the two scales.
+        // Multiplication is exact, and the scales add ... Division `/` gives the
+        // quotient at the sum of the two scales."
+        //
+        // The scales are not observable until an assignment is range-checked, so what
+        // is asserted here is that every legal combination is accepted and the illegal
+        // one is not.
+        assert!(
+            check_one(
+                "type Money is fixed(9, 2);\n\
+                 proc start()\n  var a: Money;\n  var b: Money;\n  var n: int;\n                   var m: fixed(9, 4);\nbegin\n                   m := a + b;\n  m := a - b;\n  m := a * b;\n  m := a / b;\n                   m := a + n;\n  m := n * a;\n  m := a / n;\n  n := n + 1;\n                   n := n * 2;\n  n := n div 2;\n  n := n mod 2;\nend;\n"
+            )
+            .is_empty()
+        );
+    }
+
+    #[test]
+    fn slash_on_two_ints_is_rejected_in_an_expression() {
+        // [7.4]: "`/` with two `int` operands is a compile error; use `div`." The
+        // constant evaluator already refused this; now an ordinary expression does.
+        let d = only(
+            "proc start()\n  var n: int;\n  var m: fixed(9, 2);\nbegin\n               m := n / 2;\nend;\n",
+            "use `div`",
+        );
+        assert!(d.contains("two `int` operands"), "{d}");
+        // One `fixed` operand makes it legal, including an `int` literal divisor.
+        assert!(
+            check_one(
+                "proc start()\n  var x: fixed(9, 2);\n  var m: fixed(9, 4);\nbegin\n                   m := x / 2;\n  m := 1v0 / 3v0;\nend;\n"
+            )
+            .is_empty()
+        );
+    }
+
+    #[test]
+    fn div_and_mod_take_two_ints() {
+        // [7.3]. The message points at `/`, which is the decimal operator.
+        let d = only(
+            "proc start()\n  var x: fixed(9, 2);\n  var n: int;\nbegin\n               n := x div 2;\nend;\n",
+            "takes two `int` values",
+        );
+        assert!(d.contains("use `/`"), "suggest the right operator: {d}");
+        only(
+            "proc start()\n  var x: fixed(9, 2);\n  var n: int;\nbegin\n               n := 7 mod x;\nend;\n",
+            "takes two `int` values",
+        );
+    }
+
+    #[test]
+    fn arithmetic_needs_numbers() {
+        only(
+            "proc start()\n  var b: bool;\n  var n: int;\nbegin\n  n := b + 1;\nend;\n",
+            "`+` works on numbers",
+        );
+        only(
+            "type R is record x: int; end;\n\
+             proc start()\n  var r: R;\n  var n: int;\nbegin\n  n := r * 2;\nend;\n",
+            "`*` works on numbers",
+        );
+        // `_` too.
+        only(
+            "proc start()\n  var b: bool;\n  var n: int;\nbegin\n  n := _b;\nend;\n",
+            "`_` negates a number",
+        );
+    }
+
+    #[test]
+    fn ordering_compares_numbers_or_two_chars() {
+        assert!(
+            check_one(
+                "proc start()\n  var x: fixed(9, 2);\n  var n: int;\n  var c: char;\n                   var d: char;\n  var b: bool;\nbegin\n                   b := n < 1;\n  b := x <= 2v5;\n  b := x > n;\n  b := c < d;\nend;\n"
+            )
+            .is_empty()
+        );
+        only(
+            "proc start()\n  var b: bool;\n  var c: bool;\nbegin\n  b := b < c;\nend;\n",
+            "`<` works on numbers",
+        );
+    }
+
+    #[test]
+    fn two_numbers_compare_with_equals_whatever_their_scales() {
+        // [7.4]: "Comparison is by numeric value, so `1v5 = 1v50`." So `=` on two
+        // numbers is not subject to the same-type rule that applies to records.
+        assert!(
+            check_one(
+                "type Money is fixed(9, 2);\n\
+                 proc start()\n  var a: Money;\n  var x: fixed(9, 4);\n  var n: int;\n                   var b: bool;\nbegin\n                   b := a = x;\n  b := a = n;\n  b := n = 1;\n  b := 1v5 = 1v50;\nend;\n"
             )
             .is_empty()
         );
