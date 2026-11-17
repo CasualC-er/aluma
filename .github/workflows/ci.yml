@@ -1,8 +1,11 @@
 name: CI
 
 on:
+  # Every branch, not just `main`. Phase 1 and most of Phase 2 were pushed to a
+  # working branch with no pull request open, so CI did not run on any of it: the
+  # local gate was the only check for nine commits. A branch push is exactly when
+  # the feedback is wanted.
   push:
-    branches: [main]
   pull_request:
 
 env:

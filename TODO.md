@@ -35,12 +35,13 @@ parallel with the phase above it.
 - [x] `documentation/ir.md` — skeleton, declared normative for both compilers and the backend
 - [x] `documentation/amendments.md` — log for spec changes the implementation forces
 - [x] **Conformance harness first** (D13.4): a test is a *directory* — main module + further modules + options + `args` + `[stdin]` + expected exit status, stdout, stderr or diagnostics; `run` / `compile-ok` / `compile-error` modes, with `#!error` line annotations for the errors [11] states inline
-- [x] Extract every code example from the reference, guide and style guide into `tests/docs/`, with the outcomes the docs state
-- [x] Conformance matrix: every numbered spec rule → its test(s) — `tests/conformance/matrix.md`, seeded with Phase 0/1; a Phase 2 rule may not be ticked without a row in it
+- [x] Extract every code example from the reference, guide and style guide into `tests/docs/` — 56 tests from 76 blocks, every block accounted for in `tests/docs/INVENTORY.md`
+- [ ] Pin the stated outcome of the 27 extracted programs marked `run (UNPINNED)`: the documents give their output in prose rather than in a block, so each needs reading by hand. They compile and are expected to exit 0; their output is not asserted
+- [x] Conformance matrix *started and maintained*: `tests/conformance/matrix.md`, a row per rule as each is implemented, with `todo` rows for the rest; no item above may be ticked without a row. **Completeness is the Phase 8 item, not this one**
 
 ## Phase 1 — Lexer and parser (`almc0`)
 
-- [x] UTF-8 source reader; ASCII-only identifiers; byte/char/line/column spans
+- [x] UTF-8 source reader; ASCII-only identifiers; byte-offset spans, with line and column derived on demand (columns counted in code points) — *no char-offset-from-start is kept, because nothing needs one*
 - [x] Keyword table (the 52 reserved words, `also` through `while`, taken from the [2] list itself, not retyped) [2]; `std` not declarable
 - [x] `#` comments to end of line, not inside literals
 - [x] Integer literals, `0x` hex, the over-max rule and the under-`_` exception in **both** spellings, `9223372036854775808` and `0x8000000000000000` [2]
@@ -68,16 +69,17 @@ path, so that diagnostic text cannot depend on `--path` or on where the tree liv
 is what makes "alongside" checkable.
 
 - [x] `almc0` driver: a binary taking source files and the [8.9] options, writing diagnostics to standard error; exit 0 clean, 1 rejected, 2 invoked wrongly
-- [x] Harness runner: invokes the driver for `compile-ok` and `compile-error` tests; 32 of the 61 tests now run for real, 29 wait on a backend
+- [x] Harness runner: invokes the driver for `compile-ok` and `compile-error` tests; 45 of the 74 tests run for real, 29 wait on a backend
 
 - [x] Module loader: file = module, `--path` order, implementation modules last, `Net` overridable [4.1]
 - [x] Import graph: not transitive, no self-import, acyclic with the cycle named in the error
 - [x] One flat namespace per module; imported module names occupy it [4.1]
 - [x] `std` auto-import; shadowing by top-level, parameter and local declarations; the unhidable name list; `std::name` always reaches the library [4.1]
-- [x] `private` on declarations and record fields; cross-module errors; private types usable in visible signatures [4.1]
+- [x] `private` on declarations and record fields; cross-module errors [4.1]
+- [ ] A private type may appear in the signature of a visible procedure: another module can pass its values around but cannot name the type [4.1] — *nothing implements or tests this yet; it was wrongly ticked with the line above*
 - [x] Declaration-before-use; `also` groups and their rules [4.3]
 - [x] By-value containment cycles and alias loops in type groups, errors naming the cycle [4.3]
-- [x] Name-equivalence type identity; every `record` its own type; `ref` nullable [3.5, 7.1]
+- [x] Name-equivalence type identity; every `record` its own type [3.5, 7.1] — *`ref` nullability is in the zero values; that `nil` may be assigned to any `ref` is checked when the assignment rules land*
 - [x] Zero values for every type [3.3]
 - [x] Constant expression evaluator: `const`, `enum`, sizes, `fixed(p,s)` arguments, unbounded decimal — *calls do not fold; see QUESTIONS.md 4*
 - [ ] `fixed` scale rules: `+ -` max scale, `*` sum, `/` sum, `int` as scale 0, `int/int` rejected [7.4]
