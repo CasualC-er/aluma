@@ -1,0 +1,4 @@
+# name: a by-value containment cycle, named in the error
+# source: documentation/language_reference.md:4.3
+mode = compile-error
+main = Cycle.alm

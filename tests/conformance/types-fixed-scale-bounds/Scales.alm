@@ -1,0 +1,10 @@
+# [7.4]: "`p` may be any positive constant with no upper limit, and `s` must satisfy
+# 0 <= s <= p."
+const Digits is 18;
+
+type Money is fixed(Digits, 2);    # a constant precision is fine
+type Whole is fixed(36, 0);        # s = 0 is fine
+type Exact is fixed(5, 5);         # s = p is fine
+
+type TooFew is fixed(0, 0);        #!error: at least one digit
+type TooMuch is fixed(4, 5);       #!error: 0 <= s <= p

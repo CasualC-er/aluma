@@ -16,6 +16,9 @@ pub enum LibraryKind {
     Procedure,
     Type,
     Constant,
+    /// One of the predefined exceptions of [7.5]. A program names these in `catch` and
+    /// `raise` without declaring them, so they must be in scope everywhere.
+    Exception,
 }
 
 /// A library name.
@@ -162,13 +165,49 @@ const fn lib(name: &'static str, kind: LibraryKind, unhidable: bool, builtin: bo
     }
 }
 
-pub fn lookup(name: &str) -> Option<&'static LibraryName> {
-    LIBRARY.iter().find(|l| l.name == name)
+/// The predefined exceptions of [7.5], as library names.
+///
+/// They are not in `LIBRARY` because their list lives in `alm_core::exception`, which
+/// is shared with the runtime — the compiler must accept exactly the names the runtime
+/// can raise, and two hand-written lists would drift.
+///
+/// They are hideable: [4.1]'s unhidable list is `len` and the task, handle and view
+/// operations, and does not include them, so a module may declare `exception Overflow;`
+/// of its own and shadow the predefined one within that module.
+pub fn predefined_exception(name: &str) -> Option<LibraryName> {
+    alm_core::exception::Predefined::from_name(name).map(|p| LibraryName {
+        name: p.name(),
+        kind: LibraryKind::Exception,
+        unhidable: false,
+        builtin: true,
+    })
+}
+
+pub fn lookup(name: &str) -> Option<LibraryName> {
+    LIBRARY
+        .iter()
+        .map(|l| LibraryName {
+            name: l.name,
+            kind: l.kind,
+            unhidable: l.unhidable,
+            builtin: l.builtin,
+        })
+        .find(|l| l.name == name)
+        .or_else(|| predefined_exception(name))
 }
 
 /// Can a module, parameter or local declaration hide this library name? [4.1]
 pub fn is_unhidable(name: &str) -> bool {
     lookup(name).is_some_and(|l| l.unhidable)
+}
+
+/// Is this one of the names `std` provides, as opposed to a predefined exception?
+///
+/// `std::name` reaches the library [4.1]; a predefined exception is not a library name
+/// in that sense — [7.5] says "predefined exceptions are not" written with a module
+/// name — so `std::Overflow` is not a thing.
+pub fn is_std_name(name: &str) -> bool {
+    LIBRARY.iter().any(|l| l.name == name)
 }
 
 #[cfg(test)]
@@ -254,6 +293,22 @@ mod tests {
         assert_eq!(got_sorted, want);
         // The task procedures are builtins too, and are exactly the unhidable ones.
         assert!(LIBRARY.iter().filter(|l| l.unhidable).all(|l| l.builtin));
+    }
+
+    #[test]
+    fn the_predefined_exceptions_are_in_scope() {
+        // [7.5] gives the table, and a program names them in `catch` and `raise`
+        // without declaring them. Pass 5 of the review found that none of them
+        // resolved, so `catch FormatError do` did not compile.
+        for p in alm_core::exception::Predefined::ALL {
+            let found = lookup(p.name()).unwrap_or_else(|| panic!("`{}` must resolve", p.name()));
+            assert_eq!(found.kind, LibraryKind::Exception);
+            assert!(!found.unhidable, "a module may declare its own [4.1]");
+        }
+        // They are not `std` names: [7.5] writes declared exceptions with a module
+        // name and predefined ones without, so `std::Overflow` is not a name.
+        assert!(!is_std_name("Overflow"));
+        assert!(is_std_name("writeLine"));
     }
 
     #[test]

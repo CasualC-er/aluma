@@ -76,16 +76,16 @@ is what makes "alongside" checkable.
 - [x] `std` auto-import; shadowing by top-level, parameter and local declarations; the unhidable name list; `std::name` always reaches the library [4.1]
 - [ ] `private` on declarations and record fields; cross-module errors; private types usable in visible signatures [4.1] — *declarations done; record fields and signature rules need the type graph*
 - [x] Declaration-before-use; `also` groups and their rules [4.3]
-- [ ] By-value containment cycles and alias loops in type groups, errors naming the cycle [4.3]
-- [ ] Name-equivalence type identity; every `record` its own type; `ref` nullable [3.5, 7.1]
-- [ ] Zero values for every type [3.3]
+- [x] By-value containment cycles and alias loops in type groups, errors naming the cycle [4.3]
+- [x] Name-equivalence type identity; every `record` its own type; `ref` nullable [3.5, 7.1]
+- [x] Zero values for every type [3.3]
 - [x] Constant expression evaluator: `const`, `enum`, sizes, `fixed(p,s)` arguments, unbounded decimal — *calls do not fold; see QUESTIONS.md 4*
 - [ ] `fixed` scale rules: `+ -` max scale, `*` sum, `/` sum, `int` as scale 0, `int/int` rejected [7.4]
 - [ ] Assignment checks: `Overflow`, `LostPrecision`, `rounded` [7.4]
 - [ ] The rounding-step set and the single-rounding special case (syntactic) [7.4]
 - [ ] `divide`/`rescale` with and without a mode; the six rounding modes [7.4]
 - [ ] Named number types and tags: `+ -` and comparison rules, everything else untagged, assignment and argument rules [7.4]
-- [ ] `=` only on reference-free values; `~` only on refs/mailboxes/views [7.1]
+- [x] `=` only on reference-free values; `~` only on refs/mailboxes/views [7.1] — *the type rules; the expression checks that use them come with type checking*
 - [ ] Parameter rules: all by reference, variable arguments match exactly, non-variable arguments become temporaries [7.2]
 - [ ] Procedure parameters: `proc(T,...):T` types, exact match, second-class [7.2]
 - [ ] Statement checks: `void` required and forbidden cases, `exit`/`next` inside `while` only, `defer` not inside `while`, nameless handler last [5]
@@ -96,6 +96,7 @@ is what makes "alongside" checkable.
 - [ ] `start` in the main module only, in one of the four forms [9.1]
 - [ ] Builtin signature checking for the polymorphic set (`len`, `fixedStr`, `strFixed`, `abs`, `min`, `max`, `scaleOf`, `power`, `floor`, `ceiling`, `truncate`, `sign`, `units`, `fromUnits`, `divide`, `rescale` + task/handle/view calls) [9]
 - [ ] Generic modules: `generic type/const/proc` lines, argument fitting, procedure-argument exact match, builtins rejected as arguments [4.4]
+- [ ] Generic instances in name resolution (review.md, resolve.rs:663, still open): a name qualified by an instance (`Names::Nope`) is not checked, the arguments of an instance import (`G(Missing)`) are not resolved, and `import G;` of a generic module without arguments is accepted
 - [ ] Instance interning: one instance per (generic, arguments) program-wide; argument equality by type identity / constant value / procedure declaration [4.4]
 - [ ] Opaque `T`: reject `=`, ordering, arithmetic, `nil` comparison, indexing, field selection, transitively through records and arrays; check once per module [4.4]
 - [ ] Nested instantiation depth limit 32, error naming the chain [4.4]

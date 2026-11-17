@@ -1,0 +1,4 @@
+# name: the scale of a fixed type must satisfy 0 <= s <= p
+# source: documentation/language_reference.md:7.4
+mode = compile-error
+main = Scales.alm

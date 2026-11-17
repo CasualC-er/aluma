@@ -501,14 +501,20 @@ impl Evaluator<'_, '_> {
 
 /// Euclidean division [7.3]: the remainder is never negative.
 ///
-/// Returns `(quotient, remainder)`, either of which is `None` if it overflows — which
-/// happens for `i64::MIN div _1`.
+/// Returns `(quotient, remainder)`. Only the *quotient* can overflow, at
+/// `i64::MIN div _1`, where the true quotient is 2^63 and has no `int`. The remainder
+/// there is 0 and is perfectly representable, so reporting `Overflow` for
+/// `_9223372036854775808 mod _1` would reject a program the language allows.
 fn euclidean(a: i64, b: i64) -> (Option<i64>, Option<i64>) {
-    let Some(q) = a.checked_div_euclid(b) else {
-        return (None, None);
+    // Rust's `checked_rem_euclid` also returns `None` for `(i64::MIN, -1)`, mirroring
+    // its division, but the Euclidean remainder is 0 there: the definition requires
+    // `0 <= r < |b|`, and `|b|` is 1. A caller has already rejected a zero divisor.
+    let remainder = if b == -1 {
+        Some(0)
+    } else {
+        a.checked_rem_euclid(b)
     };
-    let m = a.checked_rem_euclid(b);
-    (Some(q), m)
+    (a.checked_div_euclid(b), remainder)
 }
 
 #[cfg(test)]
@@ -602,6 +608,9 @@ mod tests {
         assert_eq!(int("7 mod _2"), 1);
         fails("1 div 0", "would raise `DivideByZero`");
         fails("1 mod 0", "would raise `DivideByZero`");
+        // `i64::MIN div _1` has no `int` quotient, but its remainder is 0 [7.3].
+        fails("_9223372036854775808 div _1", "out of range for an `int`");
+        assert_eq!(int("_9223372036854775808 mod _1"), 0);
     }
 
     #[test]
@@ -725,6 +734,7 @@ mod tests {
         // `i64::MIN div _1` has no `i64` result [7.3].
         assert_eq!(euclidean(7, 2), (Some(3), Some(1)));
         assert_eq!(euclidean(-7, 2), (Some(-4), Some(1)));
-        assert_eq!(euclidean(i64::MIN, -1), (None, None));
+        // Only the quotient overflows here: the remainder is 0, so `mod` is fine.
+        assert_eq!(euclidean(i64::MIN, -1), (None, Some(0)));
     }
 }

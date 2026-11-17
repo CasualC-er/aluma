@@ -83,12 +83,52 @@ const BASE_DIGITS: u32 = 9;
 ///
 /// The value is `(-1)^negative × magnitude × 10^-scale`. Zero is always positive, so
 /// there is no negative zero to compare wrongly.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, Eq, Debug)]
 pub struct Decimal {
     negative: bool,
     /// Base-10⁹ limbs, least significant first, no leading zero limbs.
     limbs: Vec<u64>,
     scale: u32,
+}
+
+/// Equality is **by value**, not by representation: [7.4] says "comparison is by
+/// numeric value, so `1v5 = 1v50`". A derived `PartialEq` compares the scale too and
+/// makes those two different, which is wrong everywhere at once — in `ConstValue`, in
+/// an `assert_eq!`, in anything keyed by a value.
+impl PartialEq for Decimal {
+    fn eq(&self, other: &Self) -> bool {
+        self.compare(other).is_eq()
+    }
+}
+
+impl PartialOrd for Decimal {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Decimal {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.compare(other)
+    }
+}
+
+impl std::hash::Hash for Decimal {
+    /// Consistent with `PartialEq`, as it must be: two values that compare equal hash
+    /// the same, so trailing fractional zeros are removed first.
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let mut trimmed = self.clone();
+        while trimmed.scale > 0 {
+            let (lower, lost) = trimmed.rescale(trimmed.scale - 1, Rounding::Down);
+            if lost {
+                break;
+            }
+            trimmed = lower;
+        }
+        trimmed.negative.hash(state);
+        trimmed.limbs.hash(state);
+        trimmed.scale.hash(state);
+    }
 }
 
 impl Decimal {
@@ -210,8 +250,28 @@ impl Decimal {
 
     /// The digits before the decimal point, which is what `Overflow` is about: "too
     /// many integer digits raises `Overflow`".
+    /// This can be **zero**, and must be: `0v05` has no integer digit, and a
+    /// `fixed(2, 2)` holds -0.99 to 0.99, so forcing a minimum of one here would make
+    /// that type reject every value it exists to hold. (`digits` does have a minimum
+    /// of one, because zero is one digit for the total-precision check.)
     pub fn integer_digits(&self) -> u32 {
-        self.digits().saturating_sub(self.scale).max(1)
+        let significant = match self.limbs.last() {
+            None => 0,
+            Some(top) => {
+                let top_digits = top.to_string().len() as u32;
+                (self.limbs.len() as u32 - 1) * BASE_DIGITS + top_digits
+            }
+        };
+        significant.saturating_sub(self.scale)
+    }
+
+    /// Does this value fit a `fixed(p, s)` without losing an integer digit? [7.4]
+    ///
+    /// Only the integer part is asked about: whether the *fractional* digits fit is a
+    /// separate question, whose answer is `LostPrecision` rather than `Overflow`, and
+    /// which `rounded` can permit.
+    pub fn fits_integer_part(&self, precision: u32, scale: u32) -> bool {
+        self.integer_digits() <= precision.saturating_sub(scale)
     }
 
     // -- magnitude helpers --------------------------------------------------
@@ -379,11 +439,17 @@ impl Decimal {
     }
 
     /// Exact multiplication: "the scales add" [7.4].
+    ///
+    /// The scales are added saturatingly. A scale comes from a literal's digits or a
+    /// declared type, both bounded far below `u32::MAX` (the compiler refuses a
+    /// precision over a million digits), so this cannot be reached by a program; it is
+    /// here because a wrapped scale would be a silently wrong *value*, and overflow
+    /// checks are on even in release builds (ADR-002) so the alternative is an abort.
     pub fn mul(&self, other: &Decimal) -> Decimal {
         Decimal {
             negative: self.negative != other.negative,
             limbs: Decimal::mul_magnitude(&self.limbs, &other.limbs),
-            scale: self.scale + other.scale,
+            scale: self.scale.saturating_add(other.scale),
         }
         .normalized()
     }
@@ -687,6 +753,27 @@ mod tests {
     }
 
     #[test]
+    fn equality_is_by_value_so_derived_comparisons_agree_with_the_spec() {
+        // [7.4]: "Comparison is by numeric value, so `1v5 = 1v50`." `==` must agree
+        // with `compare`, or every `assert_eq!` and every container keyed by a value
+        // disagrees with the language.
+        assert_eq!(d("1.5"), d("1.50"));
+        assert_eq!(d("0"), d("0.000"));
+        assert_ne!(d("1.5"), d("1.51"));
+        assert!(d("1.5") <= d("1.50"));
+        assert!(d("1.5") < d("1.51"));
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        let hash_of = |v: &Decimal| {
+            let mut h = DefaultHasher::new();
+            v.hash(&mut h);
+            h.finish()
+        };
+        assert_eq!(hash_of(&d("1.5")), hash_of(&d("1.50")));
+        assert_eq!(hash_of(&d("0")), hash_of(&d("0.00")));
+    }
+
+    #[test]
     fn comparison_is_by_value_not_by_scale() {
         // [7.4]: "Comparison is by numeric value, so `1v5 = 1v50`."
         assert_eq!(d("1.5").compare(&d("1.50")), Ordering::Equal);
@@ -830,7 +917,22 @@ mod tests {
             1,
             "zero needs one digit, so fixed(1,0) holds it"
         );
-        assert_eq!(d("0.00").integer_digits(), 1);
+        // A value with no integer part has zero integer digits. Forcing a minimum of
+        // one would make `fixed(2, 2)` reject `0v05`, which is what that type is for.
+        assert_eq!(d("0.00").integer_digits(), 0);
+        assert_eq!(d("0.05").integer_digits(), 0);
+        assert_eq!(d("0.1").integer_digits(), 0);
+        assert!(d("0.05").fits_integer_part(2, 2));
+        assert!(d("0.99").fits_integer_part(2, 2));
+        assert!(
+            !d("1.05").fits_integer_part(2, 2),
+            "1.05 needs three digits"
+        );
+        assert!(
+            d("99999.99").fits_integer_part(7, 2),
+            "the spec's fixed(7,2) example"
+        );
+        assert!(!d("999999.99").fits_integer_part(7, 2));
         assert_eq!(
             d("99999.99").digits(),
             7,
@@ -895,6 +997,112 @@ mod tests {
         let (q, lost) = exact.divide(&b, 0, Rounding::Down).unwrap();
         assert!(!lost);
         assert_eq!(q.to_text(), "1000000007");
+    }
+
+    #[test]
+    fn arithmetic_at_the_limb_boundary() {
+        // The magnitude is base 10^9, so these are where a carry, a borrow or a
+        // normalisation mistake shows up.
+        assert_eq!(d("999999999").add(&d("1")).to_text(), "1000000000");
+        assert_eq!(d("1000000000").sub(&d("1")).to_text(), "999999999");
+        assert_eq!(
+            d("999999999").mul(&d("999999999")).to_text(),
+            "999999998000000001"
+        );
+        assert_eq!(
+            d("1000000000").mul(&d("1000000000")).to_text(),
+            "1000000000000000000"
+        );
+        // A borrow that empties the top limb must leave no leading zero limb behind,
+        // or a later comparison goes wrong.
+        let a = d("1000000000000000000");
+        let b = d("999999999999999999");
+        assert_eq!(a.sub(&b).to_text(), "1");
+        assert_eq!(a.sub(&b).compare(&d("1")), Ordering::Equal);
+        assert_eq!(d("1000000000").sub(&d("1000000000")).to_text(), "0");
+        assert!(d("1000000000").sub(&d("1000000000")).is_zero());
+        // And division across the boundary.
+        let (q, lost) = d("1000000000000000000")
+            .divide(&d("1000000000"), 0, Rounding::Down)
+            .unwrap();
+        assert_eq!(q.to_text(), "1000000000");
+        assert!(!lost);
+    }
+
+    #[test]
+    fn the_arithmetic_is_self_consistent_over_many_values() {
+        // No oracle exists in the repository (ADR-013), so the check is on identities
+        // the operations must satisfy whatever the values: `(a - b) + b = a`, and
+        // `(a div b) * b + r = a` for the division's own remainder.
+        let mut state: u64 = 0x2545F4914F6CDD1D; // a fixed seed: the test is reproducible
+        let mut next = move || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+        for case in 0..400 {
+            let digits_a = 1 + (next() % 30) as usize;
+            let digits_b = 1 + (next() % 12) as usize;
+            let make = |n: usize, r: &mut dyn FnMut() -> u64| {
+                let mut text = String::new();
+                for _ in 0..n {
+                    // Favour 0 and 9 so that carries and borrows are common.
+                    let d = match r() % 5 {
+                        0 => b'0',
+                        1 => b'9',
+                        _ => b'0' + (r() % 10) as u8,
+                    };
+                    text.push(d as char);
+                }
+                text
+            };
+            let a_digits = make(digits_a, &mut next);
+            let b_digits = make(digits_b, &mut next);
+            let scale_a = (next() % 8) as u32;
+            let scale_b = (next() % 8) as u32;
+            let a = Decimal::from_digits(&a_digits, scale_a, next() % 2 == 0).unwrap();
+            let b = Decimal::from_digits(&b_digits, scale_b, next() % 2 == 0).unwrap();
+
+            // (a - b) + b = a, exactly, whatever the scales.
+            assert_eq!(
+                a.sub(&b).add(&b).compare(&a),
+                Ordering::Equal,
+                "case {case}"
+            );
+            // a * b has the sum of the scales and the product of the magnitudes.
+            let product = a.mul(&b);
+            assert_eq!(product.scale(), scale_a + scale_b, "case {case}");
+            if !b.is_zero() {
+                let scale = scale_a + scale_b + 6;
+                let (q, _) = a.divide(&b, scale, Rounding::Down).unwrap();
+                let abs = |v: &Decimal| {
+                    if v.is_negative() {
+                        v.negated()
+                    } else {
+                        v.clone()
+                    }
+                };
+                // Truncating toward zero never overshoots: |q * b| <= |a|.
+                assert!(
+                    abs(&q.mul(&b)).compare(&abs(&a)).is_le(),
+                    "case {case}: |{q} * {b}| exceeds |{a}|"
+                );
+                // And the quotient is within one unit in its last place:
+                // |a - q * b| <= |b| * 10^-scale.
+                let ulp = Decimal::from_digits("1", scale, false).unwrap();
+                assert!(
+                    abs(&a.sub(&q.mul(&b))).compare(&abs(&b).mul(&ulp)).is_le(),
+                    "case {case}: {a} / {b} at scale {scale} gave {q}, which is too far off"
+                );
+            }
+            // Multiplying by one changes nothing but the scale.
+            assert_eq!(
+                a.mul(&Decimal::from_i64(1)).compare(&a),
+                Ordering::Equal,
+                "case {case}"
+            );
+        }
     }
 
     #[test]

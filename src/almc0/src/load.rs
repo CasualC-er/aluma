@@ -38,6 +38,18 @@ use crate::lex::lex;
 use crate::parse::parse;
 use crate::token::Keyword;
 
+/// How deep an import chain may be.
+///
+/// Not a rule of the language: [4.1] puts no limit on the chain, and a real program
+/// will not come near this. It is a guard, because `visit` recurses once per module and
+/// a 20,000-module chain overflows the stack and aborts the compiler — which a user
+/// cannot tell from a crash, and the conformance harness reads as a broken test rather
+/// than a rejected program. A diagnostic is always better than a signal.
+///
+/// The same reasoning as the `--depth` limit of [8.5.2], which makes `StackOverflow` a
+/// checked exception rather than letting the machine stack decide.
+const MAX_IMPORT_DEPTH: usize = 400;
+
 /// Modules the implementation provides, which need no file on the path.
 ///
 /// `std` is imported by every module automatically and cannot be declared [2, 4.1].
@@ -171,6 +183,19 @@ impl Loader<'_> {
     /// `at` is the span of the `import` item that led here, for the diagnostics; `None`
     /// for the main module, which nothing imported.
     fn visit(&mut self, name: &str, path: Option<PathBuf>, at: Option<Span>) {
+        if self.stack.len() >= MAX_IMPORT_DEPTH {
+            let span = at.unwrap_or(Span::new(SourceId(0), 0, 0));
+            self.diags.error(
+                span,
+                format!(
+                    "imports nest more than {MAX_IMPORT_DEPTH} deep, which this \
+                     compiler does not support; the chain reaches `{name}`"
+                ),
+            );
+            // Marked done so the chain is reported once rather than at every step.
+            self.done.insert(name.to_owned(), State::Done);
+            return;
+        }
         match self.done.get(name) {
             Some(State::Done) => return,
             Some(State::Visiting) => {
@@ -611,6 +636,31 @@ mod tests {
             "{errs:?}"
         );
         assert!(errs[0].starts_with("Worker:1:6:"), "{errs:?}");
+    }
+
+    #[test]
+    fn a_very_deep_import_chain_is_reported_rather_than_crashing() {
+        // The loader recurses once per module, so without a guard a long chain
+        // overflows the stack and aborts the process — indistinguishable from a
+        // compiler bug, and read by the harness as a broken test.
+        let depth = MAX_IMPORT_DEPTH + 20;
+        let mut files: Vec<(String, String)> = Vec::new();
+        for i in 0..depth {
+            let body = if i + 1 < depth {
+                format!("import M{};\nproc go()\nbegin\nend;\n", i + 1)
+            } else {
+                "proc go()\nbegin\nend;\n".to_owned()
+            };
+            files.push((format!("M{i}.alm"), body));
+        }
+        let borrowed: Vec<(&str, &str)> = files
+            .iter()
+            .map(|(a, b)| (a.as_str(), b.as_str()))
+            .collect();
+        let t = Tree::new("deep", &borrowed);
+        let (_, errs) = load_tree(&t.path("M0.alm"), &[]);
+        assert_eq!(errs.len(), 1, "one diagnostic for one chain: {errs:?}");
+        assert!(errs[0].contains("nest more than"), "{errs:?}");
     }
 
     #[test]

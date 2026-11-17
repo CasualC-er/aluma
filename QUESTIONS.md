@@ -53,3 +53,19 @@ A division is a rounding step, and losing a non-zero digit at one raises
 it and suggests writing the value out or using `divide(a, b, k, mode)`. I believe that
 follows from the spec rather than being a choice, but it is the kind of thing worth a
 second opinion, since the alternative reading is that a constant simply rounds.
+
+## 6. Type graph decisions (for the record, no answer needed unless you disagree)
+
+- A named *reference* type (`type Name is String;`) carries **no tag**. [7.4] gives the
+  tag rules for "named number types" and says every other operation gives an untagged
+  result, so I read tags as a property of `int` and `fixed` types only. `tag()` returns
+  `None` for `type Name is String;`.
+- A `fixed` precision over 1,000,000 digits is refused. [7.4] says `p` has "no upper
+  limit", and nothing a program can notice is limited — the bound exists because a
+  scale is held in a `u32`, and casting an `i64` constant straight into one wrapped
+  (`fixed(5000000000, 5000000000)` became a narrow type). The message says it is this
+  compiler's limit, not the language's.
+- An import chain deeper than 400 modules is refused, for the same reason [8.5.2] makes
+  `StackOverflow` a checked exception rather than letting the machine stack decide: the
+  loader recurses per module, and a 20,000-module chain aborted the compiler. A
+  diagnostic beats a signal.

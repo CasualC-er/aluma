@@ -1,0 +1,4 @@
+# name: an alias loop
+# source: documentation/language_reference.md:4.3
+mode = compile-error
+main = Alias.alm

@@ -1,0 +1,6 @@
+# [4.3]: "An alias loop, such as `type A is B; also type B is A;`, is also an error."
+#
+# The cycle is one mistake, so it is reported once, at the declaration the compiler
+# reaches first. Annotating both lines would be asserting a cascade.
+type A is B;        #!error: by value
+also type B is A;

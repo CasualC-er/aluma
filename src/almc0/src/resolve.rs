@@ -89,6 +89,17 @@ pub struct ModuleSymbols {
     pub by_name: BTreeMap<String, Symbol>,
     /// Modules this one imports, by the name they are bound to.
     pub imports: BTreeMap<String, Span>,
+    /// False for an implementation module, whose source is not read [9.7], so nothing
+    /// can be said about its names. A module that merely declares nothing is still
+    /// *known*, and every qualified name into it is an error — using "no symbols" for
+    /// both made `Empty::anything` resolve.
+    pub known: bool,
+    /// The `also` group each declaration belongs to, by declaration index [4.3].
+    ///
+    /// Precomputed because declaration-before-use asks for it at *every* name use, and
+    /// scanning the symbol table each time makes resolution quadratic in a large
+    /// module.
+    pub groups: Vec<usize>,
 }
 
 /// Every module's symbols, by module name.
@@ -107,14 +118,18 @@ pub fn resolve(loaded: &Loaded, diags: &mut Diagnostics) -> Symbols {
         let Some(program) = &m.program else {
             // An implementation module. Its names are not known from source; `std` is
             // handled by the library table and `Net`'s are checked in a later phase.
-            symbols
-                .modules
-                .insert(m.name.clone(), ModuleSymbols::default());
+            symbols.modules.insert(
+                m.name.clone(),
+                ModuleSymbols {
+                    known: false,
+                    ..ModuleSymbols::default()
+                },
+            );
             continue;
         };
-        symbols
-            .modules
-            .insert(m.name.clone(), collect(&m.name, program, diags));
+        let mut module = collect(&m.name, program, diags);
+        module.known = true;
+        symbols.modules.insert(m.name.clone(), module);
     }
     for m in &loaded.modules {
         if let Some(program) = &m.program {
@@ -150,14 +165,18 @@ fn collect(module: &str, program: &Program, diags: &mut Diagnostics) -> ModuleSy
             out.imports.insert(item.name.text.clone(), item.name.span);
         }
     }
-    // The generic parameters of a generic module [4.4].
-    for (i, g) in program.generics.iter().enumerate() {
+    // The generic parameters of a generic module [4.4]. They are parameters of the
+    // *module*, not declarations in it, so they are in scope throughout: index and
+    // group 0, like a group that starts before everything. Numbering them with the
+    // declaration counter made the third parameter look like a forward reference from
+    // the first declaration.
+    for g in &program.generics {
         let (name, kind) = match g {
             GenericParam::Type { name, .. } => (name, SymbolKind::GenericType),
             GenericParam::Const { name, .. } => (name, SymbolKind::GenericConst),
             GenericParam::Proc { name, .. } => (name, SymbolKind::GenericProc),
         };
-        declare(&mut out, module, name, kind, false, i, i, diags);
+        declare(&mut out, module, name, kind, false, 0, 0, diags);
     }
 
     // Group membership [4.3]: a declaration with `also` joins the group of the one
@@ -238,6 +257,11 @@ fn collect(module: &str, program: &Program, diags: &mut Diagnostics) -> ModuleSy
         } else {
             group_start = i;
         }
+        // One entry per declaration, in order, so the lookup below is an index.
+        while out.groups.len() <= i {
+            out.groups.push(group_start);
+        }
+        out.groups[i] = group_start;
 
         match &decl.kind {
             DeclKind::Enum { names } => {
@@ -632,7 +656,7 @@ impl Resolver<'_, '_> {
         // `std::name` always reaches the library one [4.1].
         if module.text == "std" {
             match library::lookup(&name.text) {
-                Some(l) => self.check_library_kind(l, name, expect),
+                Some(l) => self.check_library_kind(&l, name, expect),
                 None => self.diags.error(
                     name.span,
                     format!("the standard library has no name `{}` [9]", name.text),
@@ -659,8 +683,10 @@ impl Resolver<'_, '_> {
         let Some(other) = self.symbols.modules.get(&module.text) else {
             return;
         };
-        // An implementation module's names are not known from source yet.
-        if other.by_name.is_empty() && other.imports.is_empty() {
+        // An implementation module's names are not known from source yet, so nothing
+        // can be said about a qualified name into it. A module that merely declares
+        // nothing is known, and every name into it is an error.
+        if !other.known {
             return;
         }
         match other.by_name.get(&name.text).cloned() {
@@ -697,7 +723,15 @@ impl Resolver<'_, '_> {
             // [4.1]: "A use of the name before its declaration is an error, not a use
             // of the library name." Within an `also` group every member is in scope
             // throughout [4.3].
-            let visible = symbol.index < index || symbol.group == group_of(self.here(), index);
+            // A generic parameter is in scope throughout the module [4.4]; everything
+            // else is subject to declaration order, with a group's members visible to
+            // one another [4.3].
+            let always = matches!(
+                symbol.kind,
+                SymbolKind::GenericType | SymbolKind::GenericConst | SymbolKind::GenericProc
+            );
+            let visible =
+                always || symbol.index < index || symbol.group == group_of(self.here(), index);
             if !visible {
                 let hides_library = library::lookup(&name.text).is_some();
                 let mut d = Diagnostic::error(
@@ -722,7 +756,7 @@ impl Resolver<'_, '_> {
             return;
         }
         match library::lookup(&name.text) {
-            Some(l) => self.check_library_kind(l, name, expect),
+            Some(l) => self.check_library_kind(&l, name, expect),
             None => self
                 .diags
                 .error(name.span, format!("`{}` is not declared", name.text)),
@@ -733,7 +767,16 @@ impl Resolver<'_, '_> {
         let ok = match expect {
             Expect::Type => symbol.kind.is_type(),
             Expect::Exception => symbol.kind == SymbolKind::Exception,
-            Expect::Value => !matches!(symbol.kind, SymbolKind::Module),
+            // An exception is not a value: only `raise` and `catch` name one [5, 7.5].
+            // A type is not a value either. Accepting them let `raise len;` and
+            // `x := SomeType;` through.
+            Expect::Value => !matches!(
+                symbol.kind,
+                SymbolKind::Module
+                    | SymbolKind::Exception
+                    | SymbolKind::Type
+                    | SymbolKind::GenericType
+            ),
         };
         if !ok {
             let symbol_span = symbol.span;
@@ -748,29 +791,27 @@ impl Resolver<'_, '_> {
         }
     }
 
-    fn check_library_kind(
-        &mut self,
-        l: &'static library::LibraryName,
-        name: &Ident,
-        expect: Expect,
-    ) {
+    fn check_library_kind(&mut self, l: &library::LibraryName, name: &Ident, expect: Expect) {
+        use library::LibraryKind;
         let ok = match expect {
-            Expect::Type => l.kind == library::LibraryKind::Type,
-            // The library declares no exceptions: the predefined ones of [7.5] are not
-            // library names, and a `catch` naming one is checked elsewhere.
-            Expect::Exception => false,
-            Expect::Value => l.kind != library::LibraryKind::Type,
+            Expect::Type => l.kind == LibraryKind::Type,
+            // The predefined exceptions of [7.5] are in scope everywhere, and are the
+            // only library names a `catch` or `raise` may name.
+            Expect::Exception => l.kind == LibraryKind::Exception,
+            // An exception is not a value: `raise` takes one, nothing else does.
+            Expect::Value => !matches!(l.kind, LibraryKind::Type | LibraryKind::Exception),
         };
-        if !ok && expect != Expect::Exception {
+        if !ok {
             self.diags.error(
                 name.span,
                 format!(
-                    "the library's `{}` is {}, not {}",
+                    "`{}` is {}, not {}",
                     name.text,
                     match l.kind {
-                        library::LibraryKind::Type => "a type",
-                        library::LibraryKind::Constant => "a constant",
-                        library::LibraryKind::Procedure => "a procedure",
+                        LibraryKind::Type => "a type",
+                        LibraryKind::Constant => "a constant",
+                        LibraryKind::Procedure => "a procedure",
+                        LibraryKind::Exception => "a predefined exception",
                     },
                     expect.describe()
                 ),
@@ -779,14 +820,9 @@ impl Resolver<'_, '_> {
     }
 }
 
-/// The group index of the declaration at `index`.
+/// The group index of the declaration at `index` [4.3].
 fn group_of(module: &ModuleSymbols, index: usize) -> usize {
-    module
-        .by_name
-        .values()
-        .find(|s| s.index == index)
-        .map(|s| s.group)
-        .unwrap_or(index)
+    module.groups.get(index).copied().unwrap_or(index)
 }
 
 /// What a name is expected to denote where it appears.
@@ -1122,6 +1158,45 @@ mod tests {
     }
 
     #[test]
+    fn an_exception_is_not_a_value_and_a_value_is_not_an_exception() {
+        // Only `raise` and `catch` name an exception [5], and a `raise` names an
+        // exception and nothing else. Both directions were accepted before.
+        let d =
+            check("exception Empty;\nproc start()\n  var x: int;\nbegin\n  x := Empty;\nend;\n");
+        assert_eq!(d.len(), 1, "{d:#?}");
+        assert!(d[0].contains("is an exception, not a value"), "{d:?}");
+        // A library procedure is not an exception.
+        let d = check("proc start()\nbegin\n  raise len;\nend;\n");
+        assert_eq!(d.len(), 1, "{d:#?}");
+        assert!(d[0].contains("not an exception"), "{d:?}");
+        // The predefined exceptions of [7.5] are in scope everywhere, in both roles.
+        assert!(
+            check(
+                "proc start()\n  var n: int;\nbegin\n  try\n    n := 1;\n                   catch Overflow, FormatError do\n    n := 0;\n  end;\n                   raise IOError;\nend;\n"
+            )
+            .is_empty()
+        );
+    }
+
+    #[test]
+    fn a_qualified_name_into_a_module_that_declares_nothing_is_an_error() {
+        // An implementation module's names are unknown, but a module that simply
+        // declares nothing is known, and every name into it is an error.
+        let d = check_modules(&[
+            (
+                "Main.alm",
+                "import Empty;\nproc start()\n  var x: int;\nbegin\n                   x := Empty::anything();\nend;\n",
+            ),
+            ("Empty.alm", "# a module with no declarations at all\n"),
+        ]);
+        assert_eq!(d.len(), 1, "{d:#?}");
+        assert!(
+            d[0].contains("`Empty` does not declare `anything`"),
+            "{d:?}"
+        );
+    }
+
+    #[test]
     fn a_name_must_denote_the_right_kind_of_thing() {
         let d = only(
             "const C is 1;\nproc start()\n  var x: C;\nbegin\nend;\n",
@@ -1175,6 +1250,27 @@ mod tests {
                      proc start()\nbegin\n  raise Empty;\nend;\n",
                 ),
                 ("Dep.alm", "type Node is bool;\nexception Empty;\n"),
+            ])
+            .is_empty()
+        );
+    }
+
+    #[test]
+    fn every_generic_parameter_is_in_scope_from_the_first_declaration() {
+        // A parameter is a parameter of the module, not a declaration in it, so
+        // declaration order does not apply to it. Numbering the parameters with the
+        // declaration counter made this a forward reference.
+        assert!(
+            check_modules(&[
+                (
+                    "Main.alm",
+                    "import I is Gen(int, bool, int);\nproc start()\nbegin\nend;\n"
+                ),
+                (
+                    "Gen.alm",
+                    "generic type A;\ngeneric type B;\ngeneric type C;\n\
+                     type Box is record a: A; b: B; c: C; end;\n",
+                ),
             ])
             .is_empty()
         );

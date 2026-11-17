@@ -131,7 +131,28 @@ enumerate those, and rows are added here as each is implemented.
 | `enum A, B, C` declares the ints 0, 1, 2 | `consts.rs::a_constant_may_name_an_earlier_constant_or_an_enum_name` | tested |
 | a constant may name an earlier constant, including another module's | `consts.rs::a_constant_of_another_module` | tested |
 | the `rounded` assignment rules, and single rounding | — | todo |
-| named number types and their tags | — | todo |
+| a value fits a `fixed(p, s)`'s integer part | `decimal.rs::digit_counts_are_what_an_assignment_checks` | tested |
+
+## Types [3.3], [3.5], [4.3], [7.1], [7.4] — Phase 2
+
+| Rule | Test | Status |
+|---|---|---|
+| type identity is by name; every `record` is its own type | `types.rs::type_identity_is_by_name` | tested |
+| two spellings of a predefined or constructed type are one type | `types.rs::a_constructed_type_is_interned_so_two_spellings_are_one_type` | tested |
+| a named number type carries its name as a tag | `types.rs::a_named_number_type_carries_a_tag` | tested |
+| zero values [3.3] | `types.rs::zero_values_follow_section_three_three` | tested |
+| `=` only on reference-free values [7.1] | `types.rs::equality_is_defined_only_on_reference_free_values` | tested |
+| `~` only on references, mailboxes and views [7.1] | `types.rs::identity_is_defined_only_on_references_mailboxes_and_views` | tested |
+| `fixed(p, s)`: p >= 1 and 0 <= s <= p | `types.rs::the_fixed_precision_and_scale_rules`, `tests/conformance/types-fixed-scale-bounds` | tested |
+| an array length is a constant | `types.rs::an_array_length_comes_from_a_constant` | tested |
+| a record cannot declare one field twice | `types.rs::a_record_cannot_declare_one_field_twice` | tested |
+| no by-value containment cycle; the error names the cycle [4.3] | `types.rs::a_containment_cycle_by_value_is_an_error_naming_the_cycle`, `types.rs::a_type_that_holds_itself_by_value_is_an_error`, `tests/conformance/types-containment-cycle` | tested |
+| no alias loop [4.3] | `types.rs::an_alias_loop_is_an_error`, `tests/conformance/types-alias-loop` | tested |
+| a cycle through `ref` is allowed | `types.rs::a_cycle_through_ref_is_allowed` | tested |
+| the library's types [9] | `types.rs::the_library_types_resolve` | tested |
+| a generic type parameter is opaque [4.4] | `types.rs::a_generic_type_parameter_is_opaque` | tested |
+| the predefined exceptions are in scope everywhere [7.5] | `library.rs::the_predefined_exceptions_are_in_scope`, `resolve.rs::an_exception_is_not_a_value_and_a_value_is_not_an_exception` | tested |
+| named number types' tag rules in expressions | — | todo |
 
 ## Other semantics [4.2]–[4.4], [7] — Phase 2
 

@@ -1,0 +1,23 @@
+# [4.3]: "A type group cannot contain a cycle of containment by value: a record or
+# fixed-length array may hold another member only through `ref`, unless the other
+# member does not hold it back ... compile errors that name the cycle."
+#
+# The legal form comes first, from [4.3]'s own example, so this test pins what is
+# allowed as well as what is not.
+type Tree is record
+  label: int;
+  kids: ref Forest;
+end;
+
+also type Forest is record
+  trees: ref array of ref Tree;
+end;
+
+# Holding the other member by value instead.
+type BadTree is record       #!error: contain each other by value
+  kids: BadForest;
+end;
+
+also type BadForest is record
+  trees: BadTree;
+end;
